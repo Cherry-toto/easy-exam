@@ -21,8 +21,8 @@ $redis_config = [
 // 邮箱配置
 $email_config = [
     'host' => 'smtp.163.com',
-    'username' => 'ttuuffuu@163.com',
-    'password' => 'LAHTNZGVPLMXSHNE',
+    'username' => '',
+    'password' => '',
     'port' => 465,
     'from' => 'ttuuffuu@163.com',
     'from_name' => '在线考试系统'

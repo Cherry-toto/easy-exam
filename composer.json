@@ -1,0 +1,28 @@
+{
+    "name": "exame-system/online-exam",
+    "description": "在线自学考试系统",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Online Exam System",
+            "email": "admin@example.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "phpmailer/phpmailer": "^6.8",
+        "predis/predis": "^2.2",
+      "ext-mbstring": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "echo '依赖安装完成，请配置config.php中的邮箱和Redis设置'"
+        ]
+    }
+}

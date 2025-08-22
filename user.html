@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 在线考试系统</title>
+           <link href="/css/tailwind.min.css" rel="stylesheet">
+    <link href="/fontawesome-free-6.7.2/css/all.min.css" rel="stylesheet">
+    <script src="/js/jquery.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding-bottom: 80px;
+        }
+        .user-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .user-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        .menu-item {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+        .menu-item:hover {
+            background: #f3f4f6;
+            transform: scale(1.02);
+        }
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .logout-modal {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .bottom-nav-link {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            color: #6b7280;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        .bottom-nav-link:hover {
+            color: #667eea;
+        }
+        .bottom-nav-link.nav-active {
+            color: #667eea;
+        }
+        .bottom-nav-link i {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        .bottom-nav-link span {
+            font-size: 12px;
+            display: block;
+        }
+        @media (max-width: 768px) {
+            .bottom-nav-link span {
+                display: none;
+            }
+            .bottom-nav-link i {
+                font-size: 28px;
+                margin-bottom: 0;
+            }
+            .bottom-nav-link {
+                padding: 16px 0;
+            }
+        }
+        @media (min-width: 769px) {
+            .bottom-nav-link span {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-user-circle text-2xl text-purple-600 mr-2"></i>
+                    <span class="font-bold text-lg">个人中心</span>
+                </div>
+                <button id="logoutBtn" class="text-red-600 hover:text-red-800 p-2">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- 用户信息卡片 -->
+        <div class="user-card p-6 mb-6 fade-in">
+            <div class="flex items-center space-x-4">
+                <div class="avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800" id="userEmail">用户</h2>
+                    <p class="text-gray-600">欢迎回来</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能菜单 -->
+        <div class="space-y-4">
+            <!-- 错题本 -->
+            <a href="/mistake.html" class="menu-item block bg-white p-4 rounded-lg shadow-sm">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-gray-800">错题本</h3>
+                        <p class="text-sm text-gray-600">查看您的错题记录</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </div>
+            </a>
+
+            <!-- 试卷列表 -->
+            <a href="/exam-list.html" class="menu-item block bg-white p-4 rounded-lg shadow-sm">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-list-alt text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-gray-800">试卷列表</h3>
+                        <p class="text-sm text-gray-600">浏览所有可用试卷</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </div>
+            </a>
+
+            <!-- 退出系统 -->
+            <div class="menu-item block bg-white p-4 rounded-lg shadow-sm cursor-pointer" onclick="showLogoutModal()">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-sign-out-alt text-gray-600 text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-gray-800">退出系统</h3>
+                        <p class="text-sm text-gray-600">安全退出当前账号</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计信息 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                <div class="text-2xl font-bold text-purple-600" id="mistakeCount">-</div>
+                <div class="text-sm text-gray-600">错题数量</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                <div class="text-2xl font-bold text-blue-600" id="examCount">-</div>
+                <div class="text-sm text-gray-600">参与考试</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                <div class="text-2xl font-bold text-green-600" id="scoreAvg">-</div>
+                <div class="text-sm text-gray-600">平均得分</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden">
+        <div class="flex justify-around py-3">
+            <a href="/index.php" class="bottom-nav-link text-center py-2 px-4" data-tab="home">
+                <i class="fas fa-home text-2xl"></i>
+                <span class="hidden">首页</span>
+            </a>
+            <a href="/exam-list.html" class="bottom-nav-link text-center py-2 px-4" data-tab="exam">
+                <i class="fas fa-list-alt text-2xl"></i>
+                <span class="hidden">试卷</span>
+            </a>
+            <a href="/user.html" class="bottom-nav-link text-center py-2 px-4 nav-active" data-tab="user">
+                <i class="fas fa-user text-2xl"></i>
+                <span class="hidden">个人中心</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 退出确认模态框 -->
+    <div id="logoutModal" class="logout-modal fixed inset-0 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-auto">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">确认退出</h3>
+                    <p class="text-sm text-gray-600 mb-4">确定要退出当前账号吗？</p>
+                    <div class="flex space-x-3">
+                        <button onclick="hideLogoutModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            取消
+                        </button>
+                        <button onclick="logout()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                            确定退出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // 检查登录状态
+            checkLoginStatus();
+            
+            // 加载用户统计信息
+            loadUserStats();
+        });
+
+        function checkLoginStatus() {
+            $.ajax({
+                url: '/checklogin.php',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (!response.logged_in) {
+                        window.location.href = '/login.html';
+                    }else{
+                         // 显示用户邮箱
+                        $('#userEmail').text(response.user.email);       
+                    }
+                }
+            });
+        }
+
+    
+
+        // 加载用户统计信息
+        function loadUserStats() {
+            // 加载错题数量
+            $.ajax({
+                url: '/api-mistake.php',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#mistakeCount').text(response.data.length || 0);
+                    } else {
+                        $('#mistakeCount').text('0');
+                    }
+                },
+                error: function() {
+                    $('#mistakeCount').text('-');
+                }
+            });
+
+            // 加载考试统计（这里可以扩展）
+            $('#examCount').text('-');
+            $('#scoreAvg').text('-');
+        }
+
+        // 显示退出确认模态框
+        function showLogoutModal() {
+            $('#logoutModal').removeClass('hidden');
+        }
+
+        // 隐藏退出确认模态框
+        function hideLogoutModal() {
+            $('#logoutModal').addClass('hidden');
+        }
+
+        // 退出登录
+        function logout() {
+             $.ajax({
+                url: '/loginOut.php',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // 清除所有cookie
+                        document.cookie = 'user_email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                        document.cookie = 'user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                        document.cookie = 'login_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                    }
+                    // 跳转到登录页
+                    window.location.href = '/login.html';
+                },
+                error: function() {
+                   
+                }
+            });
+           
+        }
+
+        // 获取cookie值
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) {
+                return parts.pop().split(';').shift();
+            }
+            return null;
+        }
+
+        // 点击模态框背景关闭
+        $('#logoutModal').click(function(e) {
+            if (e.target === this) {
+                hideLogoutModal();
+            }
+        });
+    </script>
+</body>
+</html>

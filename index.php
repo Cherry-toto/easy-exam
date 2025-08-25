@@ -248,14 +248,14 @@ if (!$user) {
                 <!-- 二维码 -->
                 <div class="bg-white p-4 rounded-lg shadow-lg">
                     <div class="w-32 h-32 bg-gray-100 rounded flex items-center justify-center mb-2">
-                        <img src="/app/qrcode.png" alt="二维码" class="w-30 h-30">
+                        <img src="/release/qrcode.png" alt="二维码" class="w-30 h-30">
                     </div>
                     <p class="text-sm text-gray-800 font-medium">扫码下载APP</p>
                 </div>
                 
                 <!-- 下载按钮 -->
                 <div class="space-y-4">
-                    <a href="/app/1.0.0_release.apk" class="block bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition duration-300">
+                    <a href="/release/1.0.0_release.apk" class="block bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition duration-300">
                         <i class="fab fa-android mr-2"></i>
                         Android版下载
                     </a>

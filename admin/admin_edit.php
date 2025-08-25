@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // 如果提供了密码，则更新密码
         if (!empty($password)) {
-            $adminData['password'] = password_hash($password, PASSWORD_DEFAULT);
+            $adminData['password'] = $password;
         }
 
         // 添加或更新管理员

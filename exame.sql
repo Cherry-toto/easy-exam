@@ -63,6 +63,27 @@ CREATE TABLE IF NOT EXISTS mistake (
     INDEX idx_question_id (question_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='错题本信息表';
 
+CREATE TABLE `admin`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '管理员ID',
+  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户名',
+  `password` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '密码（MD5加密）',
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '邮箱',
+  `status` tinyint(1) NOT NULL DEFAULT 1 COMMENT '状态：1正常，0禁用',
+  `salt` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '加密字符',
+  `login_time` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
+  `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `login_ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '登录IP',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `username`(`username`) USING BTREE,
+  INDEX `idx_username`(`username`) USING BTREE,
+  INDEX `idx_login_time`(`login_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '管理员信息表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of admin
+-- ----------------------------
+INSERT INTO `admin` VALUES (1, 'admin', 'c7935cc8ee50b752345290d8cf136827', '', 1, 'abcdef', '2025-08-25 13:41:38', '2025-08-23 08:52:20', '127.0.0.1');
+
 -- 插入测试数据
 -- 插入测试会员
 INSERT INTO member (email, register_time, login_time) VALUES 

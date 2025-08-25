@@ -412,7 +412,7 @@ function initBatchImport() {
                         try {
                             const response = JSON.parse(xhr.responseText);
                             if (response.success) {
-                                alert('导入成功，共导入 ' + response.data + ' 条题目');
+                                alert('导入成功，共导入 ' + response.data.count + ' 条题目');
                                 closeImportModal();
                                 window.location.reload();
                             } else {

@@ -31,7 +31,95 @@ if ($questionId > 0) {
     }
 }
 
-// 处理表单提交
+// 处理AJAX表单提交
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+    header('Content-Type: application/json; charset=utf-8');
+    
+    // 验证表单数据
+        $title = trim($_POST['title'] ?? '');
+        $type = $_POST['type'] ?? '';
+        $optionA = trim($_POST['option_a'] ?? '');
+        $optionB = trim($_POST['option_b'] ?? '');
+        $optionC = trim($_POST['option_c'] ?? '');
+        $optionD = trim($_POST['option_d'] ?? '');
+        $correctAnswer = $_POST['correct_answer'] ?? '';
+        $score = (float)($_POST['score'] ?? 0);
+        $examId = (int)($_POST['exam_id'] ?? 0);
+        $analysis = trim($_POST['analysis'] ?? '') ?: '';
+    
+    $errors = [];
+    
+    // 验证必填字段
+    if (empty($title)) {
+        $errors[] = '题目内容不能为空';
+    }
+    if (empty($type)) {
+        $errors[] = '请选择题目类型';
+    }
+    if (empty($correctAnswer)) {
+        $errors[] = '请选择正确答案';
+    }
+    if ($score <= 0) {
+        $errors[] = '分值必须大于0';
+    }
+    if ($examId <= 0) {
+        $errors[] = '请选择所属试卷';
+    }
+    
+    if (!empty($errors)) {
+        echo json_encode(['success' => false, 'errors' => $errors]);
+        exit;
+    }
+    
+    // 转换题目类型为数字
+    $typeNum = ($type === 'single') ? 1 : 2;
+    
+    // 处理多选题答案
+    if ($type === 'multiple' && is_array($correctAnswer)) {
+        $correctAnswer = implode(',', $correctAnswer);
+    }
+    
+    // 准备选项JSON
+    $optionsJson = json_encode([
+        'A' => $optionA,
+        'B' => $optionB,
+        'C' => $optionC,
+        'D' => $optionD
+    ]);
+
+    // 准备题目数据
+        $questionData = [
+            'title' => $title,
+            'type' => $typeNum,
+            'options' => $optionsJson,
+            'answer' => $correctAnswer,
+            'score' => $score,
+            'exam_id' => $examId,
+            'analysis' => $analysis
+        ];
+
+    try {
+        // 更新或添加题目
+        if ($questionId > 0) {
+            $result = $questionModel->updateQuestion($questionId, $questionData);
+            $message = '题目更新成功';
+        } else {
+            $result = $questionModel->addQuestion($questionData);
+            $message = '题目添加成功';
+        }
+
+        if ($result) {
+            echo json_encode(['success' => true, 'message' => $message, 'redirect' => 'questions.php']);
+        } else {
+            echo json_encode(['success' => false, 'errors' => ['操作失败，请重试']]);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+    }
+    exit;
+}
+
+// 兼容传统表单提交
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 验证表单数据
     $title = trim($_POST['title'] ?? '');
@@ -51,6 +139,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 转换题目类型为数字
         $typeNum = ($type === 'single') ? 1 : 2;
         
+        // 处理多选题答案
+        if ($type === 'multiple' && is_array($correctAnswer)) {
+            $correctAnswer = implode(',', $correctAnswer);
+        }
+        
         // 准备选项JSON
         $optionsJson = json_encode([
             'A' => $optionA,
@@ -66,20 +159,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'options' => $optionsJson,
             'correct_answer' => $correctAnswer,
             'score' => $score,
-            'exam_id' => $examId
+            'exam_id' => $examId,
+            'analysis' => $analysis
         ];
 
         // 更新或添加题目
         if ($questionId > 0) {
-            // 更新题目
             $result = $questionModel->updateQuestion($questionId, $questionData);
         } else {
-            // 添加题目
             $result = $questionModel->addQuestion($questionData);
         }
 
         if ($result) {
-            // 重定向到题目列表页，并显示成功消息
             header('Location: questions.php?message=' . urlencode($questionId > 0 ? '题目更新成功' : '题目添加成功'));
             exit;
         } else {
@@ -152,9 +243,9 @@ if (!empty($searchExam)) {
         <?php endif; ?>
 
         <!-- 表单 -->
-        <div class="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
-            <div class="p-6">
-                <form method="post" class="space-y-6">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
+        <div class="p-6">
+            <form method="post" class="space-y-6" id="questionForm">
                     <!-- 题目内容 -->
                     <div>
                         <label for="title" class="block text-sm font-medium text-gray-700 mb-1">题目内容 <span class="text-danger">*</span></label>
@@ -249,12 +340,18 @@ if (!empty($searchExam)) {
                         <input type="number" id="score" name="score" min="0.1" step="0.1" class="w-full rounded-md border-gray-300 shadow-sm input-focus transition-custom" required value="<?php echo $question ? $question['score'] : '1'; ?>">
                     </div>
 
+                    <!-- 题目解析 -->
+                    <div>
+                        <label for="analysis" class="block text-sm font-medium text-gray-700 mb-1">题目解析</label>
+                        <textarea id="analysis" name="analysis" rows="3" class="w-full rounded-md border-gray-300 shadow-sm input-focus transition-custom"><?php echo $question ? htmlspecialchars($question['analysis']) : ''; ?></textarea>
+                    </div>
+
                     <!-- 操作按钮 -->
                     <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                         <button type="button" class="btn-outline flex items-center" onclick="window.history.back();">
                             <i class="fas fa-times mr-2"></i>取消
                         </button>
-                        <button type="submit" class="btn-primary flex items-center">
+                        <button type="submit" class="btn-primary flex items-center" id="submitBtn">
                             <i class="fas fa-save mr-2"></i><?php echo $questionId > 0 ? '更新题目' : '添加题目'; ?>
                         </button>
                     </div>
@@ -305,178 +402,228 @@ if (!empty($searchExam)) {
 </div>
 </div>
 
+<script src="../static/js/jquery.min.js"></script>
 <script>
-    // 题目类型切换
-    document.querySelectorAll('input[name="type"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            if (this.value === 'single') {
-                document.getElementById('single-answer').style.display = 'block';
-                document.getElementById('multiple-answer').style.display = 'none';
+    $(document).ready(function() {
+        // 题目类型切换
+        $('input[name="type"]').on('change', function() {
+            if ($(this).val() === 'single') {
+                $('#single-answer').show();
+                $('#multiple-answer').hide();
             } else {
-                document.getElementById('single-answer').style.display = 'none';
-                document.getElementById('multiple-answer').style.display = 'block';
+                $('#single-answer').hide();
+                $('#multiple-answer').show();
             }
         });
-    });
 
-    // 试卷搜索模态框
-    const modal = document.getElementById('exam-search-modal');
-    const modalContent = document.getElementById('modal-content');
-    const searchExamBtn = document.getElementById('search-exam-btn');
-    const closeModalBtn = document.getElementById('close-modal');
-    const cancelSearchBtn = document.getElementById('cancel-search');
-    const confirmExamSelectionBtn = document.getElementById('confirm-exam-selection');
-    let selectedExamId = null;
-    let selectedExamName = null;
+        // 试卷搜索模态框
+        const $modal = $('#exam-search-modal');
+        const $modalContent = $('#modal-content');
+        let selectedExamId = null;
+        let selectedExamName = null;
 
-    // 打开模态框
-    searchExamBtn.addEventListener('click', function() {
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modal.classList.add('opacity-100');
-            modalContent.classList.add('scale-100', 'opacity-100');
-            modalContent.classList.remove('scale-95', 'opacity-0');
-        }, 10);
-        document.getElementById('exam-search-input').focus();
-    });
-
-    // 关闭模态框
-    function closeModal() {
-        modal.classList.remove('opacity-100');
-        modalContent.classList.remove('scale-100', 'opacity-100');
-        modalContent.classList.add('scale-95', 'opacity-0');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 300);
-    }
-
-    closeModalBtn.addEventListener('click', closeModal);
-    cancelSearchBtn.addEventListener('click', closeModal);
-
-    // 点击模态框外部关闭
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            closeModal();
+        function openModal() {
+            $modal.removeClass('hidden').addClass('opacity-100');
+            $modalContent.removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+            $('#exam-search-input').focus();
         }
-    });
 
-    // 试卷选择
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.select-exam')) {
-            const examElement = e.target.closest('.select-exam');
-            const examId = examElement.getAttribute('data-id');
-            const examName = examElement.getAttribute('data-name');
+        function closeModal() {
+            $modal.removeClass('opacity-100').addClass('hidden');
+            $modalContent.removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
+        }
 
-            // 清除之前的选择
-            document.querySelectorAll('.select-exam').forEach(el => {
-                el.classList.remove('bg-blue-50', 'border-blue-200');
-                el.querySelector('.exam-selected-icon').classList.add('hidden');
+        $('#search-exam-btn').on('click', openModal);
+        $('#close-modal, #cancel-search').on('click', closeModal);
+
+        // 点击模态框外部关闭
+        $modal.on('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // 搜索试卷
+        function searchExams() {
+            const searchTerm = $('#exam-search-input').val().trim();
+            if (!searchTerm) {
+                $('#exam-search-results').html('<p class="text-center text-gray-500 py-4">请输入搜索关键词</p>');
+                return;
+            }
+
+            $('#exam-search-results').html('<p class="text-center text-gray-500 py-4">搜索中...</p>');
+
+            $.get('question_edit.php', {
+                search_exam_ajax: 1,
+                search_term: searchTerm,
+                <?php echo $questionId ? "id: $questionId" : ''; ?>
+            })
+            .done(function(data) {
+                $('#exam-search-results').html(data);
+                bindExamSelectionEvents();
+            })
+            .fail(function() {
+                $('#exam-search-results').html('<p class="text-center text-red-500 py-4">搜索失败，请重试</p>');
             });
-
-            // 选中当前试卷
-            examElement.classList.add('bg-blue-50', 'border-blue-200');
-            examElement.querySelector('.exam-selected-icon').classList.remove('hidden');
-
-            selectedExamId = examId;
-            selectedExamName = examName;
-
-            // 启用确认按钮
-            confirmExamSelectionBtn.disabled = false;
         }
-    });
 
-    // 确认选择试卷
-    confirmExamSelectionBtn.addEventListener('click', function() {
-        if (selectedExamId) {
-            document.getElementById('exam_id').value = selectedExamId;
-            document.getElementById('exam_name').value = selectedExamName;
-            closeModal();
+        $('#do-search-exam').on('click', searchExams);
+        $('#exam-search-input').on('keypress', function(e) {
+            if (e.which === 13) searchExams();
+        });
+
+        // 试卷选择事件
+        function bindExamSelectionEvents() {
+            $('.select-exam').on('click', function() {
+                $('.select-exam').removeClass('bg-blue-50 border-blue-200')
+                    .find('.exam-selected-icon').addClass('hidden');
+
+                $(this).addClass('bg-blue-50 border-blue-200')
+                    .find('.exam-selected-icon').removeClass('hidden');
+
+                selectedExamId = $(this).data('id');
+                selectedExamName = $(this).data('name');
+                $('#confirm-exam-selection').prop('disabled', false);
+            });
         }
-    });
 
-    // 搜索试卷
-    document.getElementById('do-search-exam').addEventListener('click', function() {
-        const searchTerm = document.getElementById('exam-search-input').value.trim();
-        if (searchTerm) {
-            // 显示加载状态
-            const resultsContainer = document.getElementById('exam-search-results');
-            resultsContainer.innerHTML = '<p class="text-center text-gray-500 py-4">搜索中...</p>';
+        // 确认选择试卷
+        $('#confirm-exam-selection').on('click', function() {
+            if (selectedExamId) {
+                $('#exam_id').val(selectedExamId);
+                $('#exam_name').val(selectedExamName);
+                closeModal();
+            }
+        });
 
-            // 发送AJAX请求获取搜索结果
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', 'question_edit.php?search_exam_ajax=1&search_term=' + encodeURIComponent(searchTerm) + '<?php echo $questionId ? "&id=$questionId" : ''; ?>', true);
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    resultsContainer.innerHTML = xhr.responseText;
-                    // 重新绑定选择事件
-                    bindExamSelectionEvents();
+        // 初始化多选答案字段
+        if ($('input[name="type"][value="multiple"]').is(':checked')) {
+            const $hiddenInput = $('<input type="hidden" name="correct_answer">').appendTo('form');
+            
+            function updateMultipleAnswers() {
+                const values = $('input[name="correct_answer[]"]:checked').map(function() {
+                    return $(this).val();
+                }).get().join(',');
+                $hiddenInput.val(values);
+            }
+
+            $('input[name="correct_answer[]"]').on('change', updateMultipleAnswers);
+            updateMultipleAnswers();
+        }
+
+        // AJAX表单提交
+        $('#questionForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const $submitBtn = $('#submitBtn');
+            const originalText = $submitBtn.html();
+            
+            $submitBtn.prop('disabled', true)
+                .html('<i class="fas fa-spinner fa-spin mr-2"></i>提交中...');
+
+            const formData = new FormData(this);
+            
+            // 处理多选题答案
+            if ($('input[name="type"]:checked').val() === 'multiple') {
+                const values = $('input[name="correct_answer[]"]:checked').map(function() {
+                    return $(this).val();
+                }).get().join(',');
+                formData.set('correct_answer', values);
+            }
+
+            $.ajax({
+                url: '',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .done(function(data) {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => window.location.href = data.redirect, 1500);
                 } else {
-                    resultsContainer.innerHTML = '<p class="text-center text-red-500 py-4">搜索失败，请重试</p>';
+                    showErrors(data.errors);
                 }
-            };
-            xhr.onerror = function() {
-                resultsContainer.innerHTML = '<p class="text-center text-red-500 py-4">网络错误，请重试</p>';
-            };
-            xhr.send();
-        }
-    });
-
-    // 绑定试卷选择事件
-    function bindExamSelectionEvents() {
-        document.querySelectorAll('.select-exam').forEach(examElement => {
-            examElement.addEventListener('click', function() {
-                const examId = this.getAttribute('data-id');
-                const examName = this.getAttribute('data-name');
-
-                // 清除之前的选择
-                document.querySelectorAll('.select-exam').forEach(el => {
-                    el.classList.remove('bg-blue-50', 'border-blue-200');
-                    el.querySelector('.exam-selected-icon').classList.add('hidden');
-                });
-
-                // 选中当前试卷
-                this.classList.add('bg-blue-50', 'border-blue-200');
-                this.querySelector('.exam-selected-icon').classList.remove('hidden');
-
-                selectedExamId = examId;
-                selectedExamName = examName;
-
-                // 启用确认按钮
-                confirmExamSelectionBtn.disabled = false;
+            })
+            .fail(function() {
+                showErrors(['网络错误，请稍后重试']);
+            })
+            .always(function() {
+                $submitBtn.prop('disabled', false).html(originalText);
             });
         });
-    }
-
-    // 按下Enter键搜索
-    document.getElementById('exam-search-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            document.getElementById('do-search-exam').click();
+        
+        // 显示错误信息
+        function showErrors(errors) {
+            const $errorModal = $('#error-modal');
+            const $errorMessages = $('#error-messages');
+            
+            $errorMessages.empty();
+            
+            if (Array.isArray(errors)) {
+                const $ul = $('<ul class="list-disc pl-5 space-y-1"></ul>');
+                errors.forEach(error => $ul.append(`<li>${error}</li>`));
+                $errorMessages.append($ul);
+            } else {
+                $errorMessages.text(errors);
+            }
+            
+            $errorModal.removeClass('hidden').addClass('opacity-100')
+                .find('#error-modal-content').removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+        }
+        
+        // 关闭错误弹窗
+        $('#close-error-modal').on('click', function() {
+            $('#error-modal').removeClass('opacity-100').addClass('hidden')
+                .find('#error-modal-content').removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
+        });
+        
+        // 显示成功提示
+        function showToast(message, type = 'success') {
+            const $toast = $(`
+                <div class="fixed top-4 right-4 p-4 rounded-md shadow-lg text-white z-50 transition-all duration-300 transform translate-x-full ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}">
+                    <div class="flex items-center">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                        <span>${message}</span>
+                    </div>
+                </div>
+            `);
+            
+            $('body').append($toast);
+            
+            setTimeout(() => $toast.removeClass('translate-x-full').addClass('translate-x-0'), 100);
+            setTimeout(() => {
+                $toast.addClass('translate-x-full').removeClass('translate-x-0');
+                setTimeout(() => $toast.remove(), 300);
+            }, 2000);
         }
     });
-
-    // 初始化多选答案字段
-    if (document.querySelector('input[name="type"][value="multiple"]').checked) {
-        // 为多选答案创建隐藏字段
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'correct_answer';
-        document.querySelector('form').appendChild(hiddenInput);
-
-        // 监听复选框变化
-        document.querySelectorAll('input[name="correct_answer[]"]').forEach(checkbox => {
-            checkbox.addEventListener('change', updateMultipleAnswers);
-        });
-
-        // 初始化
-        updateMultipleAnswers();
-
-        function updateMultipleAnswers() {
-            const selectedValues = Array.from(document.querySelectorAll('input[name="correct_answer[]"]:checked'))
-                .map(checkbox => checkbox.value);
-            hiddenInput.value = selectedValues.join('');
-        }
-    }
 </script>
+
+<!-- 错误提示弹窗 -->
+<div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden transition-opacity duration-300">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="error-modal-content">
+        <div class="p-6">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-lg font-medium text-gray-900">提交失败</h3>
+                </div>
+            </div>
+            <div id="error-messages" class="text-sm text-gray-600 mb-4">
+                <!-- 错误信息将在这里显示 -->
+            </div>
+            <div class="flex justify-end">
+                <button type="button" id="close-error-modal" class="btn-primary">
+                    确定
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
 // 引入页脚文件
 require_once 'common/footer.php';

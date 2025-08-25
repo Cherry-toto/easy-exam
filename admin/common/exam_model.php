@@ -4,6 +4,8 @@
  * 封装与试卷相关的数据库操作
  */
 
+require_once 'logger.php';
+
 class ExamModel {
     private $pdo;
 
@@ -79,7 +81,12 @@ class ExamModel {
                 ]
             ];
         } catch (PDOException $e) {
-            error_log('获取试卷列表失败: ' . $e->getMessage());
+            log_model('ExamModel', 'getAllExams', [
+                'error' => $e->getMessage(),
+                'page' => $page,
+                'pageSize' => $pageSize,
+                'search' => $search
+            ]);
             return [
                 'exams' => [],
                 'pagination' => [
@@ -97,11 +104,6 @@ class ExamModel {
      * @param int $examId 试卷ID
      * @return array|null 试卷信息或null
      */
-    /**
-     * 根据ID获取试卷信息
-     * @param int $examId 试卷ID
-     * @return array|null 试卷信息或null
-     */
     public function getExamById($examId) {
         try {
             // 明确指定需要的字段，而不是使用*
@@ -110,7 +112,10 @@ class ExamModel {
             $stmt->execute();
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log('获取试卷信息失败: ' . $e->getMessage());
+            log_model('ExamModel', 'getExamById', [
+                'error' => $e->getMessage(),
+                'examId' => $examId
+            ]);
             return null;
         }
     }
@@ -128,9 +133,17 @@ class ExamModel {
             $stmt->bindParam(':score', $examData['score'], PDO::PARAM_INT);
             $stmt->bindParam(':status', $examData['status'], PDO::PARAM_INT);
             $stmt->execute();
-            return $this->pdo->lastInsertId();
+            $result = $this->pdo->lastInsertId();
+            log_model('ExamModel', 'addExam', [
+                'examData' => $examData,
+                'result' => $result
+            ]);
+            return $result;
         } catch (PDOException $e) {
-            error_log('添加试卷失败: ' . $e->getMessage());
+            log_model('ExamModel', 'addExam', [
+                'error' => $e->getMessage(),
+                'examData' => $examData
+            ]);
             return false;
         }
     }
@@ -150,9 +163,19 @@ class ExamModel {
             $stmt->bindParam(':status', $examData['status'], PDO::PARAM_INT);
             $stmt->bindParam(':id', $examId, PDO::PARAM_INT);
             $stmt->execute();
-            return $stmt->rowCount() > 0;
+            $result = $stmt->rowCount() > 0;
+            log_model('ExamModel', 'updateExam', [
+                'examId' => $examId,
+                'examData' => $examData,
+                'result' => $result
+            ]);
+            return $result;
         } catch (PDOException $e) {
-            error_log('更新试卷失败: ' . $e->getMessage());
+            log_model('ExamModel', 'updateExam', [
+                'error' => $e->getMessage(),
+                'examId' => $examId,
+                'examData' => $examData
+            ]);
             return false;
         }
     }
@@ -167,9 +190,17 @@ class ExamModel {
             $stmt = $this->pdo->prepare("DELETE FROM exam WHERE id = :id");
             $stmt->bindParam(':id', $examId, PDO::PARAM_INT);
             $stmt->execute();
-            return $stmt->rowCount() > 0;
+            $result = $stmt->rowCount() > 0;
+            log_model('ExamModel', 'deleteExam', [
+                'examId' => $examId,
+                'result' => $result
+            ]);
+            return $result;
         } catch (PDOException $e) {
-            error_log('删除试卷失败: ' . $e->getMessage());
+            log_model('ExamModel', 'deleteExam', [
+                'error' => $e->getMessage(),
+                'examId' => $examId
+            ]);
             return false;
         }
     }
@@ -196,9 +227,17 @@ class ExamModel {
             }
 
             $stmt->execute();
-            return $stmt->rowCount() > 0;
+            $result = $stmt->rowCount() > 0;
+            log_model('ExamModel', 'batchDeleteExams', [
+                'examIds' => $examIds,
+                'result' => $result
+            ]);
+            return $result;
         } catch (PDOException $e) {
-            error_log('批量删除试卷失败: ' . $e->getMessage());
+            log_model('ExamModel', 'batchDeleteExams', [
+                'error' => $e->getMessage(),
+                'examIds' => $examIds
+            ]);
             return false;
         }
     }
@@ -214,9 +253,17 @@ class ExamModel {
             $stmt->bindParam(':id', $examId, PDO::PARAM_INT);
             $stmt->execute();
             $result = $stmt->fetchColumn();
+            $found = $result !== false;
+            log_model('ExamModel', 'getExamNameById', [
+                'examId' => $examId,
+                'found' => $found
+            ]);
             return $result ? $result : null;
         } catch (PDOException $e) {
-            error_log('获取试卷名称失败: ' . $e->getMessage());
+            log_model('ExamModel', 'getExamNameById', [
+                'error' => $e->getMessage(),
+                'examId' => $examId
+            ]);
             return null;
         }
     }
@@ -231,9 +278,17 @@ class ExamModel {
             $stmt = $this->pdo->prepare("SELECT id, title, create_time FROM exam WHERE title LIKE :search ORDER BY create_time DESC");
             $stmt->bindValue(':search', '%' . $search . '%', PDO::PARAM_STR);
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            log_model('ExamModel', 'searchExams', [
+                'search' => $search,
+                'results' => count($results)
+            ]);
+            return $results;
         } catch (PDOException $e) {
-            error_log('搜索试卷失败: ' . $e->getMessage());
+            log_model('ExamModel', 'searchExams', [
+                'error' => $e->getMessage(),
+                'search' => $search
+            ]);
             return [];
         }
     }

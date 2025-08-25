@@ -1,0 +1,72 @@
+[
+  {
+    "question": "1. PHP是什么类型的语言？",
+    "options": ["A. 客户端脚本语言", "B. 服务器端脚本语言", "C. 标记语言", "D. 编译型语言"],
+    "answer": "B",
+    "multiSelect": false,
+    "explanation": "PHP是一种服务器端脚本语言，用于动态网页开发。"
+  },
+  {
+    "question": "2. 以下哪个符号用于PHP变量声明？",
+    "options": ["A. !", "B. @", "C. $", "D. #"],
+    "answer": "C",
+    "multiSelect": false,
+    "explanation": "PHP变量以$符号开头，如$var。"
+  },
+  {
+    "question": "3. PHP中输出内容的正确方式是？（多选）",
+    "options": ["A. echo", "B. print", "C. printf", "D. console.log"],
+    "answer": ["A", "B", "C"],
+    "multiSelect": true,
+    "explanation": "PHP中echo、print和printf都可输出内容，console.log是JavaScript的方法。"
+  },
+  {
+    "question": "4. PHP文件的默认扩展名是？",
+    "options": ["A. .ph", "B. .php", "C. .phtml", "D. .html"],
+    "answer": "B",
+    "multiSelect": false,
+    "explanation": "PHP文件的标准扩展名是.php。"
+  },
+  {
+    "question": "5. 以下哪个不是PHP的超全局变量？",
+    "options": ["A. $_GET", "B. $_POST", "C. $_GLOBAL", "D. $_SESSION"],
+    "answer": "C",
+    "multiSelect": false,
+    "explanation": "正确的超全局变量是$_GLOBALS（带S），不是$_GLOBAL。"
+  },
+  {
+    "question": "6. PHP中连接字符串的运算符是？",
+    "options": ["A. +", "B. .", "C. &", "D. ||"],
+    "answer": "B",
+    "multiSelect": false,
+    "explanation": "PHP使用点号(.)连接字符串，如$str1 . $str2。"
+  },
+  {
+    "question": "7. 以下哪个函数用于包含外部PHP文件？（多选）",
+    "options": ["A. include()", "B. require()", "C. import()", "D. load()"],
+    "answer": ["A", "B"],
+    "multiSelect": true,
+    "explanation": "PHP使用include()和require()包含文件，import()是其他语言的用法。"
+  },
+  {
+    "question": "8. PHP中如何定义常量？",
+    "options": ["A. const MY_CONST", "B. define('MY_CONST', value)", "C. constant MY_CONST", "D. #define MY_CONST"],
+    "answer": "B",
+    "multiSelect": false,
+    "explanation": "PHP使用define()函数定义常量，如define('PI', 3.14)。"
+  },
+  {
+    "question": "9. PHP数组分为哪两种类型？（多选）",
+    "options": ["A. 索引数组", "B. 关联数组", "C. 数字数组", "D. 对象数组"],
+    "answer": ["A", "B"],
+    "multiSelect": true,
+    "explanation": "PHP数组分为索引数组（数字键）和关联数组（字符串键）。"
+  },
+  {
+    "question": "10. PHP中结束语句的分号是？",
+    "options": ["A. 必须省略", "B. 可选", "C. 必须使用", "D. 只有特定语句需要"],
+    "answer": "C",
+    "multiSelect": false,
+    "explanation": "PHP中大多数语句必须以分号(;)结尾。"
+  }
+]

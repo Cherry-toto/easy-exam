@@ -140,6 +140,13 @@ try {
         ];
     }
 
+    // 获取考试用时
+    $useTime = isset($input['use_time']) ? intval($input['use_time']) : 0;
+    
+    // 插入考试记录
+    $stmt = $pdo->prepare("INSERT INTO exam_log (exam_id, member_id, score, use_time, create_time) VALUES (?, ?, ?, ?, NOW())");
+    $stmt->execute([$examId, $user['id'], round($totalScore, 2), $useTime]);
+
     // 提交事务
     $pdo->commit();
 

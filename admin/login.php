@@ -59,8 +59,6 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// 关闭数据库连接
-closeConnection($pdo);
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -69,9 +67,9 @@ closeConnection($pdo);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>在线自学考试系统 - 管理员登录</title>
     <!-- Tailwind CSS -->
-    <link href="../css/tailwind.min.css" rel="stylesheet">
+    <link href="../static/css/tailwind.min.css" rel="stylesheet">
     <!-- Font Awesome -->
-    <link href="../fontawesome-free-6.7.2/css/all.min.css" rel="stylesheet">
+    <link href="../static/fontawesome-free-6.7.2/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md bg-white rounded-lg shadow-lg overflow-hidden">
@@ -84,6 +82,12 @@ closeConnection($pdo);
             <?php if(!empty($error)): ?>
                 <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
                     <p><?php echo $error; ?></p>
+                </div>
+            <?php endif; ?>
+            
+            <?php if(isset($_GET['message']) && !empty($_GET['message'])): ?>
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+                    <p><?php echo htmlspecialchars($_GET['message']); ?></p>
                 </div>
             <?php endif; ?>
             <form method="POST" action="login.php">

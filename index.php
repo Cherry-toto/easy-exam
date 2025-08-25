@@ -20,9 +20,9 @@ if (!$user) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>首页 - 在线考试系统</title>
-       <link href="/css/tailwind.min.css" rel="stylesheet">
-    <link href="/fontawesome-free-6.7.2/css/all.min.css" rel="stylesheet">
-    <script src="/js/jquery.min.js"></script>
+       <link href="/static/css/tailwind.min.css" rel="stylesheet">
+    <link href="/static/fontawesome-free-6.7.2/css/all.min.css" rel="stylesheet">
+    <script src="/static/js/jquery.min.js"></script>
     <script>
         // 开始考试函数 - 放在这里确保在全局作用域中定义
         function startExam(examId) {

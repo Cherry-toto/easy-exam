@@ -16,11 +16,19 @@ $admin_username = $_COOKIE['admin_username'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>在线自学考试系统 - 后台管理</title>
     <!-- Tailwind CSS -->
-    <link href="/css/tailwind.min.css" rel="stylesheet">
+    <link href="/static/css/tailwind.min.css" rel="stylesheet">
     <!-- Font Awesome -->
-    <link href="/fontawesome-free-6.7.2/css/solid.css" rel="stylesheet">
-    <link href="/fontawesome-free-6.7.2/css/regular.css" rel="stylesheet">
-    <link href="/fontawesome-free-6.7.2/css/brands.css" rel="stylesheet">
+    <link href="/static/fontawesome-free-6.7.2/css/solid.css" rel="stylesheet">
+    <link href="/static/fontawesome-free-6.7.2/css/regular.css" rel="stylesheet">
+    <link href="/static/fontawesome-free-6.7.2/css/brands.css" rel="stylesheet">
+    <script>
+    // 退出登录确认函数
+    function confirmLogout() {
+        if (confirm('确定要退出登录吗？')) {
+            window.location.href = 'loginout.php';
+        }
+    }
+    </script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
     <!-- 顶部导航 -->
@@ -32,7 +40,7 @@ $admin_username = $_COOKIE['admin_username'];
             </div>
             <div class="flex items-center space-x-4">
                 <span>欢迎, <?php echo $admin_username; ?></span>
-                <a href="logout.php" class="hover:text-blue-200 transition-colors duration-300">
+                <a href="#" onclick="confirmLogout()" class="hover:text-blue-200 transition-colors duration-300">
                     <i class="fas fa-sign-out-alt mr-1"></i>退出
                 </a>
             </div>

@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>试卷列表 - 在线考试系统</title>
-           <link href="/css/tailwind.min.css" rel="stylesheet">
-    <link href="/fontawesome-free-6.7.2/css/all.min.css" rel="stylesheet">
-    <script src="/js/jquery.min.js"></script>
+           <link href="/static/css/tailwind.min.css" rel="stylesheet">
+    <link href="/static/fontawesome-free-6.7.2/css/all.min.css" rel="stylesheet">
+    <script src="/static/js/jquery.min.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -363,6 +363,7 @@
                             <div class="flex justify-between items-start mb-3">
                                 <h3 class="font-semibold text-gray-800 text-lg leading-tight flex-1 mr-2">
                                     ${exam.title}
+                                    ${exam.participated ? '<span class="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">已参加</span>' : ''}
                                 </h3>
                                 <span class="tag whitespace-nowrap">
                                     ${exam.nums}题

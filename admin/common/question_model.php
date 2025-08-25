@@ -60,6 +60,16 @@ class QuestionModel {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    // 更新试卷题目数量和选项数量
+    public function updateExamQuestionCount($exam_id) {
+        $query = 'UPDATE exam SET question_count = (SELECT COUNT(*) FROM question WHERE exam_id = :exam_id),
+                  option_count = (SELECT COUNT(DISTINCT option) FROM question WHERE exam_id = :exam_id)
+                  WHERE id = :exam_id';
+        $stmt = $this->pdo->prepare($query);
+        $stmt->bindParam(':exam_id', $exam_id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
     // 添加题目
     public function addQuestion($data) {
         $query = 'INSERT INTO question (exam_id, title, options, type, answer, analysis) 

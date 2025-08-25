@@ -19,6 +19,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit();
 }
 
+// 获取当前登录用户ID
+$member_id = null;
+if ($user = checkLoginStatus()) {
+   $member_id = $user['id'];
+}
+
 // 获取查询参数
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
@@ -26,6 +32,11 @@ $limit = 10;
 $offset = ($page - 1) * $limit;
 
 try {
+    // 启动session
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
     // 构建查询
     $where = [];
     $params = [];
@@ -56,6 +67,15 @@ try {
     $stmt->execute($params);
     $exams = $stmt->fetchAll();
     
+    // 获取用户已参加的试卷ID列表
+    $participatedExams = [];
+    if ($member_id) {
+        $participatedSql = "SELECT DISTINCT exam_id FROM exam_log WHERE member_id = ?";
+        $participatedStmt = $pdo->prepare($participatedSql);
+        $participatedStmt->execute([$member_id]);
+        $participatedExams = array_column($participatedStmt->fetchAll(), 'exam_id');
+    }
+    
     // 获取总数
     $countSql = "SELECT COUNT(*) as total FROM exam {$whereClause}";
     $countStmt = $pdo->prepare($countSql);
@@ -63,14 +83,15 @@ try {
     $total = $countStmt->fetch()['total'];
     
     // 格式化数据
-    $formattedExams = array_map(function($exam) {
+    $formattedExams = array_map(function($exam) use ($participatedExams) {
         return [
             'id' => intval($exam['id']),
             'title' => htmlspecialchars($exam['title']),
             'nums' => intval($exam['nums']),
             'score' => intval($exam['score']),
             'create_time' => $exam['create_time'],
-            'update_time' => $exam['update_time']
+            'update_time' => $exam['update_time'],
+            'participated' => in_array($exam['id'], $participatedExams)
         ];
     }, $exams);
     

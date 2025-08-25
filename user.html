@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人中心 - 在线考试系统</title>
-           <link href="/css/tailwind.min.css" rel="stylesheet">
-    <link href="/fontawesome-free-6.7.2/css/all.min.css" rel="stylesheet">
-    <script src="/js/jquery.min.js"></script>
+           <link href="/static/css/tailwind.min.css" rel="stylesheet">
+    <link href="/static/fontawesome-free-6.7.2/css/all.min.css" rel="stylesheet">
+    <script src="/static/js/jquery.min.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -142,6 +142,20 @@
                 </div>
             </a>
 
+            <!-- 考试记录 -->
+            <div class="menu-item block bg-white p-4 rounded-lg shadow-sm cursor-pointer" onclick="showExamLogs()">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-history text-green-600 text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-gray-800">考试记录</h3>
+                        <p class="text-sm text-gray-600">查看历史考试记录</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </div>
+            </div>
+
             <!-- 试卷列表 -->
             <a href="/exam-list.html" class="menu-item block bg-white p-4 rounded-lg shadow-sm">
                 <div class="flex items-center space-x-4">
@@ -229,6 +243,26 @@
         </div>
     </div>
 
+    <!-- 考试记录模态框 -->
+    <div id="examLogsModal" class="logout-modal fixed inset-0 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-auto max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">考试记录</h3>
+                    <button onclick="hideExamLogs()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div id="examLogsContent">
+                    <div class="text-center py-8">
+                        <i class="fas fa-spinner fa-spin text-2xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-500">加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         $(document).ready(function() {
             // 检查登录状态
@@ -275,9 +309,33 @@
                 }
             });
 
-            // 加载考试统计（这里可以扩展）
-            $('#examCount').text('-');
-            $('#scoreAvg').text('-');
+            // 加载考试统计
+            $.ajax({
+                url: '/api-exam-logs.php',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        $('#examCount').text(response.data.length || 0);
+                        
+                        // 计算平均得分
+                        if (response.data.length > 0) {
+                            const totalScore = response.data.reduce((sum, log) => sum + parseFloat(log.score), 0);
+                            const avgScore = (totalScore / response.data.length).toFixed(1);
+                            $('#scoreAvg').text(avgScore);
+                        } else {
+                            $('#scoreAvg').text('0');
+                        }
+                    } else {
+                        $('#examCount').text('0');
+                        $('#scoreAvg').text('0');
+                    }
+                },
+                error: function() {
+                    $('#examCount').text('-');
+                    $('#scoreAvg').text('-');
+                }
+            });
         }
 
         // 显示退出确认模态框
@@ -323,10 +381,122 @@
             return null;
         }
 
+        // 显示考试记录
+        function showExamLogs() {
+            $('#examLogsModal').removeClass('hidden');
+            loadExamLogs();
+        }
+
+        // 隐藏考试记录
+        function hideExamLogs() {
+            $('#examLogsModal').addClass('hidden');
+        }
+
+        // 加载考试记录
+        function loadExamLogs() {
+            $('#examLogsContent').html(`
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-2xl text-gray-400 mb-2"></i>
+                    <p class="text-gray-500">加载中...</p>
+                </div>
+            `);
+
+            $.ajax({
+                url: '/api-exam-logs.php',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.data && response.data.length > 0) {
+                        let html = '<div class="space-y-3">';
+                        
+                        response.data.forEach(function(log) {
+                            const examTitle = log.exam_title || '未知试卷';
+                            const score = parseFloat(log.score);
+                            const useTime = formatTime(log.use_time);
+                            const createTime = formatDateTime(log.create_time);
+                            
+                            // 根据分数设置颜色
+                            let scoreColor = 'text-green-600';
+                            if (score < 60) scoreColor = 'text-red-600';
+                            else if (score < 80) scoreColor = 'text-yellow-600';
+
+                            html += `
+                                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-semibold text-gray-800">${examTitle}</h4>
+                                        <span class="font-bold ${scoreColor}">${score}分</span>
+                                    </div>
+                                    <div class="text-sm text-gray-600 space-y-1">
+                                        <div><i class="fas fa-clock mr-2"></i>用时：${useTime}</div>
+                                        <div><i class="fas fa-calendar-alt mr-2"></i>时间：${createTime}</div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += '</div>';
+                        $('#examLogsContent').html(html);
+                    } else {
+                        $('#examLogsContent').html(`
+                            <div class="text-center py-8">
+                                <i class="fas fa-file-alt text-4xl text-gray-300 mb-3"></i>
+                                <p class="text-gray-500">暂无考试记录</p>
+                                <p class="text-sm text-gray-400 mt-2">开始您的第一次考试吧！</p>
+                            </div>
+                        `);
+                    }
+                },
+                error: function() {
+                    $('#examLogsContent').html(`
+                        <div class="text-center py-8">
+                            <i class="fas fa-exclamation-circle text-4xl text-red-300 mb-3"></i>
+                            <p class="text-red-500">加载失败</p>
+                            <p class="text-sm text-gray-400 mt-2">请稍后重试</p>
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        // 格式化时间（秒转换为分秒格式）
+        function formatTime(seconds) {
+            if (!seconds || seconds < 0) return '0秒';
+            
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            
+            if (minutes > 0) {
+                return remainingSeconds > 0 ? `${minutes}分${remainingSeconds}秒` : `${minutes}分钟`;
+            } else {
+                return `${seconds}秒`;
+            }
+        }
+
+        // 格式化日期时间
+        function formatDateTime(dateTimeStr) {
+            if (!dateTimeStr) return '';
+            
+            const date = new Date(dateTimeStr);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
         // 点击模态框背景关闭
         $('#logoutModal').click(function(e) {
             if (e.target === this) {
                 hideLogoutModal();
+            }
+        });
+
+        // 点击考试记录模态框背景关闭
+        $('#examLogsModal').click(function(e) {
+            if (e.target === this) {
+                hideExamLogs();
             }
         });
     </script>

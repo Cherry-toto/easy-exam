@@ -146,8 +146,8 @@ require_once 'common/header.php';
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-1" for="import-file">导入文件</label>
-                        <input type="file" id="import-file" name="file" accept=".xls,.xlsx,.csv" class="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 w-full px-3 py-2">
-                        <p class="mt-1 text-xs text-gray-500">支持 Excel 或 CSV 格式文件</p>
+                        <input type="file" id="import-file" name="file" accept=".json" class="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 w-full px-3 py-2">
+                        <p class="mt-1 text-xs text-gray-500">仅支持.json格式文件</p>
                     </div>
                 </form>
             </div>
@@ -206,6 +206,7 @@ function initBatchImport() {
     const importExamNameInput = document.getElementById('import-exam-name');
     const importFileInput = document.getElementById('import-file');
     const searchImportExamBtn = document.getElementById('search-import-exam-btn');
+    const importForm = document.getElementById('batch-import-form');
 
     // 导入试卷搜索模态框
     const importExamSearchModal = document.getElementById('import-exam-search-modal');
@@ -388,33 +389,54 @@ function initBatchImport() {
         const examId = importExamIdInput.value;
         const fileInput = importFileInput;
 
-        if (examId && fileInput.files.length) {
-            const formData = new FormData(document.getElementById('batch-import-form'));
+        console.log('确认导入按钮点击');
+        console.log('examId:', examId);
+        console.log('fileInput.files.length:', fileInput.files.length);
 
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', 'question_import.php', true);
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        if (response.success) {
-                            alert('导入成功，共导入 ' + response.count + ' 条题目');
-                            closeImportModal();
-                            window.location.reload();
-                        } else {
-                            alert('导入失败：' + response.message);
+        if (examId && fileInput.files.length) {
+            try {
+                // 使用FormData构造函数直接添加字段
+                const formData = new FormData();
+                formData.append('exam_id', examId);
+                formData.append('file', fileInput.files[0]);
+                
+                console.log('FormData创建成功');
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', 'question_import.php', true);
+                xhr.onload = function() {
+                    console.log('XHR响应状态:', xhr.status);
+                    console.log('XHR响应内容:', xhr.responseText);
+                    
+                    if (xhr.status === 200) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response.success) {
+                                alert('导入成功，共导入 ' + response.data + ' 条题目');
+                                closeImportModal();
+                                window.location.reload();
+                            } else {
+                                alert('导入失败：' + response.message);
+                            }
+                        } catch (e) {
+                            console.error('解析响应失败:', e);
+                            alert('导入失败：返回数据格式错误');
                         }
-                    } catch (e) {
-                        alert('导入失败：返回数据格式错误');
+                    } else {
+                        alert('网络错误，请重试');
                     }
-                } else {
+                };
+                xhr.onerror = function() {
+                    console.error('XHR请求错误');
                     alert('网络错误，请重试');
-                }
-            };
-            xhr.onerror = function() {
-                alert('网络错误，请重试');
-            };
-            xhr.send(formData);
+                };
+                xhr.send(formData);
+            } catch (error) {
+                console.error('创建FormData时出错:', error);
+                alert('创建表单数据时出错: ' + error.message);
+            }
+        } else {
+            alert('请选择试卷和文件');
         }
     });
 }

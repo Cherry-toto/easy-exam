@@ -4,10 +4,10 @@
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/static/fontawesome-free-6.7.2/css/all.min.css">
 <!-- 侧边栏 -->
 <aside class="w-64 bg-gray-800 text-white fixed left-0 top-0 bottom-0 shadow-lg hidden md:block transition-all duration-300 z-30 overflow-y-auto pt-4 mt-16">
-    <nav class="p-4 space-y-1">
+    <nav class="p-4 space-y-1 h-full flex flex-col">
         <a href="index.php" class="flex items-center px-4 py-3 rounded-md hover:bg-gray-700 transition-colors duration-300 <?php echo $current_page == 'index.php' ? 'bg-gray-700 font-bold' : ''; ?>">
             <i class="fas fa-tachometer-alt mr-3"></i>
             <span>后台首页</span>
@@ -28,6 +28,18 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <i class="fas fa-user-shield mr-3"></i>
             <span>后台管理员</span>
         </a>
+        <a href="exam_logs.php" class="flex items-center px-4 py-3 rounded-md hover:bg-gray-700 transition-colors duration-300 <?php echo $current_page == 'exam_logs.php' ? 'bg-gray-700 font-bold' : ''; ?>">
+            <i class="fas fa-history mr-3"></i>
+            <span>考试记录</span>
+        </a>
+        
+        <!-- 退出登录 -->
+        <div class="mt-auto pt-4">
+            <a href="#" onclick="confirmLogout()" class="flex items-center px-4 py-3 rounded-md hover:bg-red-600 bg-gray-700 text-red-300 hover:text-white transition-colors duration-300">
+                <i class="fas fa-sign-out-alt mr-3"></i>
+                <span>退出登录</span>
+            </a>
+        </div>
     </nav>
 </aside>
 
@@ -68,11 +80,26 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-user-shield mr-3"></i>
                 <span>后台管理员</span>
             </a>
+            <a href="exam_logs.php" class="block px-4 py-3 rounded-md hover:bg-gray-700 transition-colors duration-300">
+                <i class="fas fa-history mr-3"></i>
+                <span>考试记录</span>
+            </a>
+            <a href="#" onclick="confirmLogout()" class="block px-4 py-3 rounded-md hover:bg-red-600 bg-gray-700 text-red-300 hover:text-white transition-colors duration-300">
+                <i class="fas fa-sign-out-alt mr-3"></i>
+                <span>退出登录</span>
+            </a>
         </nav>
     </div>
 </div>
 
 <script>
+// 退出登录确认
+function confirmLogout() {
+    if (confirm('确定要退出登录吗？')) {
+        window.location.href = 'loginout.php';
+    }
+}
+
 // 移动端菜单交互
 const mobileMenuButton = document.getElementById('mobile-menu-button');
 const closeMobileMenuButton = document.getElementById('close-mobile-menu');

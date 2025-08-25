@@ -1,4 +1,4 @@
 vendor
 .git
 .idea
-config.php
+/config.php

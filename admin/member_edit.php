@@ -42,12 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $memberData = [
                 'email' => $email
             ];
-
-            // 如果提供了密码，则更新密码
-            if (!empty($password)) {
-                $memberData['password'] = password_hash($password, PASSWORD_DEFAULT);
+            if(!empty($password)){
+                $memberData['salt'] =  substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 6);
+                $memberData['password'] = md5($password . $memberData['salt']);
             }
-
             // 添加或更新会员
             if (empty($id)) {
                 // 添加新会员

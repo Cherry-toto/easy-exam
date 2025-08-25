@@ -76,7 +76,7 @@
                 <!-- 邮箱输入 -->
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-envelope mr-2"></i>邮箱地址
+                        <i class="fas fa-envelope mr-2"></i>登录邮箱
                     </label>
                     <input type="email" 
                            id="email" 
@@ -89,7 +89,7 @@
 
                 <!-- 人机验证按钮 -->
                 <div>
-                     <div class="g-recaptcha" data-sitekey="6LfO860rAAAAAO7n7KIFbsY__MpgYsLpKhzVkKNx"></div>
+                     <div class="g-recaptcha" data-sitekey="6LdW6LErAAAAAHupC67MrpARj3wqeCuIKfIwKayY"></div>
                     <!--<button type="button" -->
                     <!--        id="verifyBtn" -->
                     <!--        class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center">-->
@@ -98,11 +98,55 @@
                     <!--</button>-->
                 </div>
 
+                <!-- 登录方式切换 -->
+                <div class="flex justify-center mb-6">
+                    <div class="inline-flex p-1 bg-gray-100 rounded-lg">
+                        <button type="button" 
+                                id="emailCodeBtn" 
+                                class="px-6 py-2 rounded-md bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium transition duration-300">
+                            邮箱验证码登录
+                        </button>
+                        <button type="button" 
+                                id="accountPwdBtn" 
+                                class="px-6 py-2 rounded-md text-gray-600 font-medium transition duration-300 hover:bg-gray-200">
+                            账户密码登录
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 账户密码登录区域 -->
+                <div id="accountPwdSection" style="display: none;">
+                 
+                    <!-- 密码输入 -->
+                    <div class="mb-4">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-2"></i>密码
+                        </label>
+                        <input type="password" 
+                               id="password" 
+                               name="password" 
+                               required 
+                               class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
+                               placeholder="请输入您的密码">
+                    </div>
+
+                    <!-- 密码登录按钮 -->
+                    <button type="button" 
+                            id="pwdLoginBtn" 
+                            class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium py-3 px-4 rounded-lg hover:from-purple-600 hover:to-indigo-700 transition duration-300 flex items-center justify-center">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        <span id="pwdLoginText">登录系统</span>
+                        <div class="loading-spinner ml-2">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </button>
+                </div>
+
                 <!-- 验证码发送区域 -->
-                <div id="verifySection" >
+                <div id="verifySection" class="fade-in">
                     <button type="button" 
                             id="sendCodeBtn" 
-                            class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium py-3 px-4 rounded-lg hover:from-purple-600 hover:to-indigo-700 transition duration-300 flex items-center justify-center">
+                            class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium py-3 px-4 rounded-lg hover:from-purple-600 hover:to-indigo-700 transition duration-300 flex items-center justify-center shadow-md">
                         <i class="fas fa-paper-plane mr-2"></i>
                         <span id="sendCodeText">发送邮箱验证码</span>
                         <div class="loading-spinner ml-2">
@@ -112,7 +156,7 @@
                 </div>
 
                 <!-- 验证码输入 -->
-                <div id="codeSection" style="display: none;">
+                <div id="codeSection" style="display: none;" class="fade-in">
                     <label for="code" class="block text-sm font-medium text-gray-700 mb-2">
                         <i class="fas fa-key mr-2"></i>邮箱验证码
                     </label>
@@ -127,7 +171,7 @@
                                pattern="\d{6}">
                         <button type="button" 
                                 id="resendBtn" 
-                                class="px-4 py-3 text-sm text-purple-600 hover:text-purple-800 font-medium">
+                                class="px-4 py-3 text-sm text-purple-600 hover:text-purple-800 font-medium whitespace-nowrap">
                             重新发送
                         </button>
                     </div>
@@ -136,11 +180,11 @@
                     </p>
                 </div>
 
-                <!-- 登录按钮 -->
-                <div id="loginSection" style="display: none;">
+                <!-- 验证码登录按钮 -->
+                <div id="loginSection" style="display: none;" class="fade-in">
                     <button type="submit" 
                             id="loginBtn" 
-                            class="btn-primary w-full text-white font-medium py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center">
+                            class="btn-primary w-full text-white font-medium py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center shadow-md">
                         <i class="fas fa-sign-in-alt mr-2"></i>
                         <span id="loginText">登录系统</span>
                         <div class="loading-spinner ml-2">
@@ -167,6 +211,144 @@
 
     <script>
         $(document).ready(function() {
+            // 登录方式切换
+            const emailCodeBtn = $('#emailCodeBtn');
+            const accountPwdBtn = $('#accountPwdBtn');
+            const verifySection = $('#verifySection');
+            const codeSection = $('#codeSection');
+            const loginSection = $('#loginSection');
+            const accountPwdSection = $('#accountPwdSection');
+            const emailInput = $('#email');
+            const form = $('#loginForm');
+
+            // 初始状态 - 默认显示邮箱验证码登录
+            showEmailCodeLogin();
+
+            // 邮箱验证码登录按钮点击
+            emailCodeBtn.click(function() {
+                showEmailCodeLogin();
+            });
+
+            // 账户密码登录按钮点击
+            accountPwdBtn.click(function() {
+                showAccountPwdLogin();
+            });
+
+            // 显示邮箱验证码登录
+            function showEmailCodeLogin() {
+                emailCodeBtn.removeClass('text-gray-600 hover:bg-gray-200')
+                           .addClass('bg-gradient-to-r from-purple-500 to-indigo-600 text-white');
+                accountPwdBtn.removeClass('bg-gradient-to-r from-purple-500 to-indigo-600 text-white')
+                            .addClass('text-gray-600 hover:bg-gray-200');
+
+                verifySection.fadeIn();
+                // 如果已经发送过验证码，显示验证码输入和登录按钮
+                if (codeSection.is(':visible') || loginSection.is(':visible')) {
+                    codeSection.fadeIn();
+                    loginSection.fadeIn();
+                }
+                accountPwdSection.hide();
+                $("#password").val('');
+                emailInput.prop('required', true);
+                form.off('submit').submit(function(e) {
+                    e.preventDefault();
+                    handleEmailCodeLogin();
+                });
+            }
+
+            // 显示账户密码登录
+            function showAccountPwdLogin() {
+                accountPwdBtn.removeClass('text-gray-600 hover:bg-gray-200')
+                            .addClass('bg-gradient-to-r from-purple-500 to-indigo-600 text-white');
+                emailCodeBtn.removeClass('bg-gradient-to-r from-purple-500 to-indigo-600 text-white')
+                           .addClass('text-gray-600 hover:bg-gray-200');
+
+                verifySection.hide();
+                codeSection.hide();
+                loginSection.hide();
+                accountPwdSection.fadeIn();
+                emailInput.prop('required', false);
+            }
+
+            // 账户密码登录按钮点击事件
+            $('#pwdLoginBtn').click(function() {
+                const email = $('#email').val();
+                const password = $('#password').val();
+
+                if (!email.trim()) {
+                    shakeElement('#email');
+                    showMessage('error', '请输入登录邮箱');
+                    return;
+                }
+                if (!validateEmail(email)) {
+                    shakeElement('#email');
+                    showMessage('error', '请输入正确的邮箱地址');
+                    return;
+                }
+
+                if (!password) {
+                    shakeElement('#password');
+                    showMessage('error', '请输入密码');
+                    return;
+                }
+                loginWithAccountPwd(email, password);
+            });
+
+            // 处理邮箱验证码登录
+            function handleEmailCodeLogin() {
+                const email = $('#email').val();
+                const code = $('#code').val();
+
+                if (!validateEmail(email)) {
+                    shakeElement('#email');
+                    showMessage('error', '请输入正确的邮箱地址');
+                    return;
+                }
+
+                if (!/^\d{6}$/.test(code)) {
+                    shakeElement('#code');
+                    showMessage('error', '请输入6位数字验证码');
+                    return;
+                }
+
+                loginUser(email, code);
+            }
+
+            // 账户密码登录
+            function loginWithAccountPwd(email, password) {
+                const pwdLoginBtn = $('#pwdLoginBtn');
+                pwdLoginBtn.prop('disabled', true);
+                pwdLoginBtn.find('.loading-spinner').show();
+                pwdLoginBtn.find('#pwdLoginText').text('登录中...');
+               var recaptcha = $("#g-recaptcha-response").val();
+                $.ajax({
+                    url: '/checklogin.php',
+                    type: 'POST',
+                    data: { email: email, password: password, recaptcha: recaptcha, login_type: 'account' },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            showMessage('success', '登录成功，正在跳转...');
+                            setTimeout(function() {
+                                window.location.href = '/user.html';
+                            }, 1500);
+                        } else {
+                            shakeElement('#password');
+                            showMessage('error', response.message || '用户名或密码错误');
+                        }
+                    },
+                    error: function() {
+                        showMessage('error', '网络错误，请检查网络连接');
+                    },
+                    complete: function() {
+                        pwdLoginBtn.prop('disabled', false);
+                        pwdLoginBtn.find('.loading-spinner').hide();
+                        pwdLoginBtn.find('#pwdLoginText').text('登录系统');
+                    }
+                });
+            }
+
+            // 原有代码保留
             let isVerified = false;
             let countdownInterval;
 

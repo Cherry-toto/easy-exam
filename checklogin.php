@@ -34,6 +34,7 @@ if (!$input) {
 
 $email = isset($input['email']) ? trim($input['email']) : '';
 $code = isset($input['code']) ? trim($input['code']) : '';
+$password = isset($input['password']) ? trim($input['password']) : '';
 
 // 验证输入
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -41,38 +42,68 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit();
 }
 
-if (!preg_match('/^\d{6}$/', $code)) {
+$recaptcha = isset($input['recaptcha']) ? trim($input['recaptcha']) : '';
+
+if ($code && !preg_match('/^\d{6}$/', $code)) {
     echo json_encode(['success' => false, 'message' => '验证码格式不正确']);
     exit();
+}
+
+if($password){
+    $url = 'https://www.recaptcha.net/recaptcha/api/siteverify';
+    $postdata['secret'] = '6LdW6LErAAAAABbszS5hXE7O0FxaOIKMDzpVDrur';//v2
+    //$postdata['secret'] = '6LfO860rAAAAAGQejJZglxduHSr-JUUSyQPfieHl';//v2
+    //$postdata['secret'] = '6Lfcj4kpAAAAAG-B78mUX5vWbkKgola-oYJjgadQ';//v3
+    $postdata['response'] = $recaptcha;
+    $json = curl_http($url,$postdata,'POST');
+
+    //var_dump($res);
+    $res = json_decode($json,true);
+
+    if($res['success']){
+        //验证成功
+    }else{
+        //验证失败！
+        echo json_encode(['success' => false, 'message' => '人机验证失败，请重试！']);
+        exit();
+    }
 }
 
 try {
     // 验证验证码
     $redisKey = "verify_code_" . md5($email);
-    $storedCode = $redis->get($redisKey);
-    
-    if (!$storedCode) {
-        echo json_encode(['success' => false, 'message' => '验证码已过期，请重新获取']);
-        exit();
+    if($code){
+        $storedCode = $redis->get($redisKey);
+            
+        if (!$storedCode) {
+            echo json_encode(['success' => false, 'message' => '验证码已过期，请重新获取']);
+            exit();
+        }
+        
+        if ($storedCode !== $code) {
+            echo json_encode(['success' => false, 'message' => '验证码错误']);
+            exit();
+        }
     }
     
-    if ($storedCode !== $code) {
-        echo json_encode(['success' => false, 'message' => '验证码错误']);
-        exit();
-    }
     
     // 开始事务
     $pdo->beginTransaction();
     
     try {
+
         // 检查用户是否已存在
-        $stmt = $pdo->prepare("SELECT id, email, register_time, login_time FROM member WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT id, email, password, salt, register_time, login_time FROM member WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
         
         $current_time = date('Y-m-d H:i:s');
         
         if ($user) {
+            if($password && md5($password.$user['salt']) != $user['password']){
+                echo json_encode(['success' => false, 'message' => '密码错误']);
+                exit();
+            }
             // 更新最后登录时间
             $stmt = $pdo->prepare("UPDATE member SET login_time = ? WHERE id = ?");
             $stmt->execute([$current_time, $user['id']]);

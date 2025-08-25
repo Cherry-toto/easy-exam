@@ -8,6 +8,8 @@ USE exame_system;
 CREATE TABLE IF NOT EXISTS member (
     id INT AUTO_INCREMENT PRIMARY KEY COMMENT '会员ID',
     email VARCHAR(255) NOT NULL UNIQUE COMMENT '邮箱地址',
+    password VARCHAR(255) NOT NULL DEFAULT '' COMMENT '密码',
+    salt VARCHAR(50) NOT NULL DEFAULT '' COMMENT '加密字符',
     register_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
     login_time DATETIME DEFAULT NULL COMMENT '最后登录时间',
     INDEX idx_email (email),

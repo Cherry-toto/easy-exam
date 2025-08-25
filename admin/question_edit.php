@@ -32,9 +32,8 @@ if ($questionId > 0) {
 }
 
 // 处理AJAX表单提交
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
-    header('Content-Type: application/json; charset=utf-8');
-    
+if ($_POST) {
+  
     // 验证表单数据
         $title = trim($_POST['title'] ?? '');
         $type = $_POST['type'] ?? '';
@@ -43,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         $optionC = trim($_POST['option_c'] ?? '');
         $optionD = trim($_POST['option_d'] ?? '');
         $correctAnswer = $_POST['correct_answer'] ?? '';
+        $simpleAnswer = $_POST['simple_answer'] ?? '';
         $score = (float)($_POST['score'] ?? 0);
         $examId = (int)($_POST['exam_id'] ?? 0);
         $analysis = trim($_POST['analysis'] ?? '') ?: '';
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
     if (empty($type)) {
         $errors[] = '请选择题目类型';
     }
-    if (empty($correctAnswer)) {
+    if (empty($correctAnswer) && empty($simpleAnswer)) {
         $errors[] = '请选择正确答案';
     }
     if ($score <= 0) {
@@ -75,8 +75,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
     $typeNum = ($type === 'single') ? 1 : 2;
     
     // 处理多选题答案
-    if ($type === 'multiple' && is_array($correctAnswer)) {
-        $correctAnswer = implode(',', $correctAnswer);
+    if ($type === 'multiple') {
+        $correctAnswer = $correctAnswer;
+    }else{
+        $correctAnswer = $simpleAnswer;
     }
     
     // 准备选项JSON
@@ -97,7 +99,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
             'exam_id' => $examId,
             'analysis' => $analysis
         ];
-
     try {
         // 更新或添加题目
         if ($questionId > 0) {
@@ -117,66 +118,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WI
         echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
     }
     exit;
-}
-
-// 兼容传统表单提交
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 验证表单数据
-    $title = trim($_POST['title'] ?? '');
-    $type = $_POST['type'] ?? '';
-    $optionA = trim($_POST['option_a'] ?? '');
-    $optionB = trim($_POST['option_b'] ?? '');
-    $optionC = trim($_POST['option_c'] ?? '');
-    $optionD = trim($_POST['option_d'] ?? '');
-    $correctAnswer = $_POST['correct_answer'] ?? '';
-    $score = (float)($_POST['score'] ?? 0);
-    $examId = (int)($_POST['exam_id'] ?? 0);
-    
-    // 验证必填字段
-    if (empty($title) || empty($type) || empty($correctAnswer) || $score <= 0 || $examId <= 0) {
-        $error = '请填写所有必填字段';
-    } else {
-        // 转换题目类型为数字
-        $typeNum = ($type === 'single') ? 1 : 2;
-        
-        // 处理多选题答案
-        if ($type === 'multiple' && is_array($correctAnswer)) {
-            $correctAnswer = implode(',', $correctAnswer);
-        }
-        
-        // 准备选项JSON
-        $optionsJson = json_encode([
-            'A' => $optionA,
-            'B' => $optionB,
-            'C' => $optionC,
-            'D' => $optionD
-        ]);
-
-        // 准备题目数据
-        $questionData = [
-            'title' => $title,
-            'type' => $typeNum,
-            'options' => $optionsJson,
-            'correct_answer' => $correctAnswer,
-            'score' => $score,
-            'exam_id' => $examId,
-            'analysis' => $analysis
-        ];
-
-        // 更新或添加题目
-        if ($questionId > 0) {
-            $result = $questionModel->updateQuestion($questionId, $questionData);
-        } else {
-            $result = $questionModel->addQuestion($questionData);
-        }
-
-        if ($result) {
-            header('Location: questions.php?message=' . urlencode($questionId > 0 ? '题目更新成功' : '题目添加成功'));
-            exit;
-        } else {
-            $error = '操作失败，请重试';
-        }
-    }
 }
 
 // 处理AJAX试卷搜索请求
@@ -303,7 +244,7 @@ if (!empty($searchExam)) {
                     <div id="answer-container">
                         <label class="block text-sm font-medium text-gray-700 mb-1">正确答案 <span class="text-danger">*</span></label>
                         <div id="single-answer" class="mt-2" style="<?php echo $question && $question['type'] == 2 ? 'display: none;' : ''; ?>">
-                            <select name="correct_answer" class="w-full rounded-md border-gray-300 shadow-sm input-focus transition-custom" required>
+                            <select name="simple_answer" class="w-full rounded-md border-gray-300 shadow-sm input-focus transition-custom" >
                                 <option value="">请选择正确答案</option>
                                 <option value="A" <?php echo $question && $question['answer'] === 'A' ? 'selected' : ''; ?>>A</option>
                                 <option value="B" <?php echo $question && $question['answer'] === 'B' ? 'selected' : ''; ?>>B</option>
@@ -522,20 +463,20 @@ if (!empty($searchExam)) {
             const formData = new FormData(this);
             
             // 处理多选题答案
-            if ($('input[name="type"]:checked').val() === 'multiple') {
-                const values = $('input[name="correct_answer[]"]:checked').map(function() {
-                    return $(this).val();
-                }).get().join(',');
-                formData.set('correct_answer', values);
-            }
+            // if ($('input[name="type"]:checked').val() === 'multiple') {
+            //     const values = $('input[name="correct_answer[]"]:checked').map(function() {
+            //         return $(this).val();
+            //     }).get().join(',');
+            //     formData.set('correct_answer', values);
+            // }
 
             $.ajax({
                 url: '',
                 type: 'POST',
                 data: formData,
+                dataType: 'json',
                 processData: false,
                 contentType: false,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
             .done(function(data) {
                 if (data.success) {

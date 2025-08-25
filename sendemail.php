@@ -36,7 +36,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 $url = 'https://www.recaptcha.net/recaptcha/api/siteverify';
-$postdata['secret'] = '6LfO860rAAAAAGQejJZglxduHSr-JUUSyQPfieHl';//v2
+$postdata['secret'] = '6LdW6LErAAAAABbszS5hXE7O0FxaOIKMDzpVDrur';//v2
 //$postdata['secret'] = '6Lfcj4kpAAAAAG-B78mUX5vWbkKgola-oYJjgadQ';//v3
 $postdata['response'] = $_REQUEST['recaptcha'];
 $json = curl_http($url,$postdata,'POST');

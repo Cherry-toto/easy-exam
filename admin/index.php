@@ -14,48 +14,160 @@ $questionModel = new QuestionModel();
 $memberModel = new MemberModel();
 
 // 获取统计数据
-// 1. 总试卷数
-$examCount = 0;
+// 1. 总试卷数及环比
+    $examCount = 0;
+    $examCountLastMonth = 0;
+    try {
+        global $pdo;
+        // 当前总数
+        $stmt = $pdo->query('SELECT COUNT(*) as count FROM exam');
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $examCount = $result['count'] ?? 0;
+        
+        // 上月总数
+        $lastMonth = date('Y-m-01', strtotime('-1 month'));
+        $thisMonth = date('Y-m-01');
+        $stmt = $pdo->prepare('SELECT COUNT(*) as count FROM exam WHERE create_time < ? AND create_time >= ?');
+        $stmt->execute([$thisMonth, $lastMonth]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $examCountLastMonth = $result['count'] ?? 0;
+    } catch (PDOException $e) {
+        error_log('获取试卷数量失败: ' . $e->getMessage());
+    }
+    
+    // 计算试卷数环比
+    $examGrowthRate = 0;
+    if ($examCountLastMonth > 0) {
+        $examGrowthRate = round(($examCount - $examCountLastMonth) / $examCountLastMonth * 100);
+    }
+
+// 2. 总题目数及环比
+    $questionCount = 0;
+    $questionCountLastMonth = 0;
+    try {
+        global $pdo;
+        // 当前总数
+        $stmt = $pdo->query('SELECT COUNT(*) as count FROM question');
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $questionCount = $result['count'] ?? 0;
+        
+        // 上月总数
+        $lastMonth = date('Y-m-01', strtotime('-1 month'));
+        $thisMonth = date('Y-m-01');
+        $stmt = $pdo->prepare('SELECT COUNT(*) as count FROM question WHERE create_time < ? AND create_time >= ?');
+        $stmt->execute([$thisMonth, $lastMonth]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $questionCountLastMonth = $result['count'] ?? 0;
+    } catch (PDOException $e) {
+        error_log('获取题目数量失败: ' . $e->getMessage());
+    }
+    
+    // 计算题目数环比
+    $questionGrowthRate = 0;
+    if ($questionCountLastMonth > 0) {
+        $questionGrowthRate = round(($questionCount - $questionCountLastMonth) / $questionCountLastMonth * 100);
+    }
+
+// 3. 注册用户数及环比
+    $memberCount = 0;
+    $memberCountLastMonth = 0;
+    try {
+        global $pdo;
+        // 当前总数
+        $stmt = $pdo->query('SELECT COUNT(*) as count FROM member');
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $memberCount = $result['count'] ?? 0;
+        
+        // 上月总数
+        $lastMonth = date('Y-m-01', strtotime('-1 month'));
+        $thisMonth = date('Y-m-01');
+        $stmt = $pdo->prepare('SELECT COUNT(*) as count FROM member WHERE register_time < ? AND register_time >= ?');
+        $stmt->execute([$thisMonth, $lastMonth]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $memberCountLastMonth = $result['count'] ?? 0;
+    } catch (PDOException $e) {
+        error_log('获取会员数量失败: ' . $e->getMessage());
+    }
+    
+    // 计算用户数环比
+    $memberGrowthRate = 0;
+    if ($memberCountLastMonth > 0) {
+        $memberGrowthRate = round(($memberCount - $memberCountLastMonth) / $memberCountLastMonth * 100);
+    }
+
+// 4. 错题本数量及昨日对比
+    $mistakeCount = 0;
+    $mistakeCountYesterday = 0;
+    try {
+        global $pdo;
+        // 当前总数
+        $stmt = $pdo->query('SELECT COUNT(*) as count FROM mistake');
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $mistakeCount = $result['count'] ?? 0;
+        
+        // 昨日总数
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+        $today = date('Y-m-d');
+        $stmt = $pdo->prepare('SELECT COUNT(*) as count FROM mistake WHERE create_time < ? AND create_time >= ?');
+        $stmt->execute([$today, $yesterday]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $mistakeCountYesterday = $result['count'] ?? 0;
+    } catch (PDOException $e) {
+        error_log('获取错题数量失败: ' . $e->getMessage());
+    }
+    
+    // 计算错题数日环比
+    $mistakeGrowthRate = 0;
+    if ($mistakeCountYesterday > 0) {
+        $mistakeGrowthRate = round(($mistakeCount - $mistakeCountYesterday) / $mistakeCountYesterday * 100);
+    }
+
+// 5. 获取最近考试记录
+$recentExams = [];
 try {
     global $pdo;
-    $stmt = $pdo->query('SELECT COUNT(*) as count FROM exam');
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $examCount = $result['count'] ?? 0;
+    $sql = "
+        SELECT el.*, m.email, e.title 
+        FROM exam_log el
+        JOIN member m ON el.member_id = m.id
+        JOIN exam e ON el.exam_id = e.id
+        ORDER BY el.create_time DESC
+        LIMIT 10
+    ";
+    $stmt = $pdo->query($sql);
+    $recentExams = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    error_log('获取试卷数量失败: ' . $e->getMessage());
+    error_log('获取最近考试记录失败: ' . $e->getMessage());
 }
 
-// 2. 总题目数
-$questionCount = 0;
-try {
-    global $pdo;
-    $stmt = $pdo->query('SELECT COUNT(*) as count FROM question');
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $questionCount = $result['count'] ?? 0;
-} catch (PDOException $e) {
-    error_log('获取题目数量失败: ' . $e->getMessage());
+// 格式化时间函数
+function formatTimeAgo($datetime) {
+    $timestamp = strtotime($datetime);
+    $now = time();
+    $diff = $now - $timestamp;
+
+    if ($diff < 60) {
+        return $diff . '秒前';
+    } elseif ($diff < 3600) {
+        return floor($diff / 60) . '分钟前';
+    } elseif ($diff < 86400) {
+        return floor($diff / 3600) . '小时前';
+    } elseif ($diff < 2592000) {
+        return floor($diff / 86400) . '天前';
+    } else {
+        return date('Y-m-d', $timestamp);
+    }
 }
 
-// 3. 注册用户数
-$memberCount = 0;
-try {
-    global $pdo;
-    $stmt = $pdo->query('SELECT COUNT(*) as count FROM member');
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $memberCount = $result['count'] ?? 0;
-} catch (PDOException $e) {
-    error_log('获取会员数量失败: ' . $e->getMessage());
-}
-
-// 4. 错题本数量
-$mistakeCount = 0;
-try {
-    global $pdo;
-    $stmt = $pdo->query('SELECT COUNT(*) as count FROM mistake');
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $mistakeCount = $result['count'] ?? 0;
-} catch (PDOException $e) {
-    error_log('获取错题数量失败: ' . $e->getMessage());
+// 格式化用时函数
+function formatUseTime($seconds) {
+    if ($seconds < 60) {
+        return $seconds . '秒';
+    } elseif ($seconds < 3600) {
+        return floor($seconds / 60) . '分' . ($seconds % 60) . '秒';
+    } else {
+        return floor($seconds / 3600) . '小时' . floor(($seconds % 3600) / 60) . '分';
+    }
 }
 ?>
 <!-- 主要内容 -->
@@ -79,8 +191,17 @@ try {
                     </div>
                 </div>
                 <div class="mt-4 flex items-center text-sm text-green-500">
+                   
+                    <?php if ($examGrowthRate > 0): ?>
                     <i class="fas fa-arrow-up mr-1"></i>
-                    <span>12% 较上月</span>
+                    <span class="text-green-500"><?php echo $examGrowthRate; ?>% 较上月</span>
+                    <?php elseif ($examGrowthRate < 0): ?>
+                    <i class="fas fa-arrow-down mr-1"></i>
+                    <span class="text-red-500"><?php echo abs($examGrowthRate); ?>% 较上月</span>
+                    <?php else: ?>
+                    <i class="fas fa-minus mr-1"></i>
+                    <span class="text-gray-500">0% 较上月</span>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -95,8 +216,17 @@ try {
                     </div>
                 </div>
                 <div class="mt-4 flex items-center text-sm text-green-500">
+               
+                    <?php if ($questionGrowthRate > 0): ?>
                     <i class="fas fa-arrow-up mr-1"></i>
-                    <span>8% 较上月</span>
+                    <span class="text-green-500"><?php echo $questionGrowthRate; ?>% 较上月</span>
+                    <?php elseif ($questionGrowthRate < 0): ?>
+                    <i class="fas fa-arrow-down mr-1"></i>
+                    <span class="text-red-500"><?php echo abs($questionGrowthRate); ?>% 较上月</span>
+                    <?php else: ?>
+                    <i class="fas fa-minus mr-1"></i>
+                    <span class="text-gray-500">0% 较上月</span>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -111,8 +241,17 @@ try {
                     </div>
                 </div>
                 <div class="mt-4 flex items-center text-sm text-green-500">
+                    
+                    <?php if ($memberGrowthRate > 0): ?>
                     <i class="fas fa-arrow-up mr-1"></i>
-                    <span>15% 较上月</span>
+                    <span class="text-green-500"><?php echo $memberGrowthRate; ?>% 较上月</span>
+                    <?php elseif ($memberGrowthRate < 0): ?>
+                    <i class="fas fa-arrow-down mr-1"></i>
+                    <span class="text-red-500"><?php echo abs($memberGrowthRate); ?>% 较上月</span>
+                    <?php else: ?>
+                    <i class="fas fa-minus mr-1"></i>
+                    <span class="text-gray-500">0% 较上月</span>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -127,8 +266,17 @@ try {
                     </div>
                 </div>
                 <div class="mt-4 flex items-center text-sm text-red-500">
+                    
+                    <?php if ($mistakeGrowthRate > 0): ?>
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    <span class="text-green-500"><?php echo $mistakeGrowthRate; ?>% 较昨日</span>
+                    <?php elseif ($mistakeGrowthRate < 0): ?>
                     <i class="fas fa-arrow-down mr-1"></i>
-                    <span>5% 较昨日</span>
+                    <span class="text-red-500"><?php echo abs($mistakeGrowthRate); ?>% 较昨日</span>
+                    <?php else: ?>
+                    <i class="fas fa-minus mr-1"></i>
+                    <span class="text-gray-500">0% 较昨日</span>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -149,51 +297,40 @@ try {
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        <tr class="hover:bg-gray-50 transition-colors duration-300">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">张三</div>
-                                        <div class="text-sm text-gray-500">student@example.com</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">完成了 PHP基础知识测试</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">10分钟前</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-300">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">李四</div>
-                                        <div class="text-sm text-gray-500">student2@example.com</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">完成了 JavaScript基础测试</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">25分钟前</td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors duration-300">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
-                                        <i class="fas fa-user-shield"></i>
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">admin</div>
-                                        <div class="text-sm text-gray-500">admin@example.com</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">添加了新试卷 MySQL数据库测试</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1小时前</td>
-                        </tr>
+                        <?php if (!empty($recentExams)): ?>
+                            <?php foreach ($recentExams as $exam): ?>
+                                <tr class="hover:bg-gray-50 transition-colors duration-300">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900"><?php echo explode('@', $exam['email'])[0]; ?></div>
+                                                <div class="text-sm text-gray-500"><?php echo $exam['email']; ?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        完成了 <span class="font-medium text-indigo-600"><?php echo $exam['title']; ?></span>
+                                        <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <?php echo $exam['score']; ?>分
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <div><?php echo formatTimeAgo($exam['create_time']); ?></div>
+                                        <div class="text-xs text-gray-400">用时: <?php echo formatUseTime($exam['use_time']); ?></div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="3" class="px-6 py-8 text-center text-gray-500">
+                                    <i class="fas fa-calendar-alt text-2xl mb-2 block mx-auto"></i>
+                                    暂无考试记录
+                                </td>
+                            </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>

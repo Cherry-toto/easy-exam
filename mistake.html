@@ -162,6 +162,70 @@
                     loadMistakes();
                 }
             });
+
+ // 使用事件委托处理动态生成的按钮点击事件
+            $(document).on('click', '.practice-btn', function() {
+                const mistakeId = $(this).data('id');
+                const mistake = mistakeData.find(m => m.id == mistakeId);
+                if (mistake) {
+                    // 处理选项数据 - 支持对象格式和数组格式
+                    let options = {};
+                    try {
+                        if (typeof mistake.options === 'string') {
+                            const parsed = JSON.parse(mistake.options || '{}');
+                            if (Array.isArray(parsed)) {
+                                // 数组格式转换为对象格式
+                                options = {};
+                                const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                                parsed.forEach((item, index) => {
+                                    if (index < letters.length) {
+                                        options[letters[index]] = item;
+                                    }
+                                });
+                            } else if (typeof parsed === 'object' && parsed !== null) {
+                                // 对象格式直接使用
+                                options = parsed;
+                            } else {
+                                options = {};
+                            }
+                        } else if (Array.isArray(mistake.options)) {
+                            // 数组格式转换为对象格式
+                            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                            mistake.options.forEach((item, index) => {
+                                if (index < letters.length) {
+                                    options[letters[index]] = item;
+                                }
+                            });
+                        } else if (typeof mistake.options === 'object' && mistake.options !== null) {
+                            // 对象格式直接使用
+                            options = mistake.options;
+                        } else {
+                            options = {};
+                        }
+                    } catch (e) {
+                        console.error('解析选项失败:', e);
+                        options = {};
+                    }
+                    
+                    // 构建练习参数
+                    const practiceData = {
+                        title: mistake.title,
+                        type: mistake.type,
+                        options: options,
+                        answer: mistake.answer,
+                        analysis: mistake.analysis || ''
+                    };
+                    
+                    // 将数据存储到sessionStorage
+                    sessionStorage.setItem('practiceMistake', JSON.stringify(practiceData));
+                    
+                    // 跳转到练习页面
+                    window.location.href = '/practice.html?mistakeId=' + mistakeId;
+                } else {
+                    alert('未找到对应的错题信息');
+                }
+            });
+
         });
 
         function loadMistakes() {
@@ -303,6 +367,9 @@
                             <div class="text-sm text-gray-600">
                                 来源试卷：<span class="font-medium">${mistake.exam_title}</span>
                             </div>
+                            <button class="practice-btn bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm" data-action="practice" data-id="${mistake.id}">
+                                    <i class="fas fa-redo mr-1"></i>重新练习
+                                </button>
                             <button onclick="startExam(${mistake.exam_id})" 
                                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">
                                 <i class="fas fa-play mr-1"></i>

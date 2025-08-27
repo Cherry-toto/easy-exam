@@ -501,6 +501,28 @@
                 
                 // 绑定选项点击事件
                 bindOptionEvents(question);
+                
+                // 恢复用户的答案选择状态
+                const userAnswer = userAnswers[question.id];
+                if (userAnswer) {
+                    if (question.type === 1) {
+                        // 单选题
+                        $(`.option-item[data-question="${question.id}"][data-option="${userAnswer}"]`).addClass('selected');
+                    } else {
+                        // 多选题
+                        userAnswer.split('').forEach(option => {
+                            const optionItem = $(`.option-item[data-question="${question.id}"][data-option="${option}"]`);
+                            optionItem.addClass('selected');
+                            // 添加选中标记
+                            if (optionItem.find('.fa-check').length === 0) {
+                                optionItem.find('.w-6').append('<i class="fas fa-check text-xs"></i>');
+                            }
+                            if (optionItem.find('input[type="checkbox"]').length > 0) {
+                                optionItem.find('input[type="checkbox"]').prop('checked', true);
+                            }
+                        });
+                    }
+                }
             }
 
             function generateOptionsHtml(question) {
@@ -642,29 +664,108 @@
                 });
 
                 // 显示结果题目
-                const resultsHtml = examResults.results.map(result => `
-                    <div class="border rounded-lg p-4 ${result.is_correct ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}">
-                        <div class="flex justify-between items-start mb-2">
-                            <h4 class="font-semibold text-gray-800">${result.title}</h4>
-                            <span class="text-sm font-medium ${result.is_correct ? 'text-green-600' : 'text-red-600'}">
-                                ${result.is_correct ? '✅ 正确' : '❌ 错误'}
-                            </span>
-                        </div>
+                const resultsHtml = examResults.results.map(result => {
+                    let optionsHtml = '';
+                    
+                    // 尝试从不同来源获取选项数据
+                    let options = null;
+                    
+                    // 首先尝试从原始questions数组中查找
+                    const question = questions.find(q => q.id === result.question_id);
+                    if (question && question.options) {
+                        options = question.options;
+                    }
+                    // 如果没有找到，尝试检查result中是否直接包含选项
+                    else if (result.options) {
+                        options = result.options;
+                    }
+                    // 如果仍然没有，尝试从字符串格式解析（如"{A: 'AAAA', B: 'BBB', C: 'CCC', D: 'DDD'}"）
+                    else if (result.options_str) {
+                        try {
+                            // 处理可能的字符串格式
+                            const formattedStr = result.options_str.replace(/'/g, '"');
+                            options = JSON.parse(formattedStr);
+                        } catch (e) {
+                            console.log('解析选项字符串失败:', e);
+                        }
+                    }
+                    
+                    // 如果找到了选项数据
+                    if (options) {
+                        optionsHtml = `<div class="mb-3">
+                            <strong class="block text-sm font-medium text-gray-700 mb-1">选项:</strong>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">`;
                         
-                        <div class="text-sm text-gray-600 mb-2">
-                            <div>你的答案: <span class="font-medium">${result.user_answer || '未作答'}</span></div>
-                            <div>正确答案: <span class="font-medium text-green-600">${result.correct_answer}</span></div>
-                        </div>
-
-                        ${result.analysis ? `
-                            <div class="analysis-box">
-                                <div class="text-sm text-gray-700">
-                                    <strong>解析:</strong> ${result.analysis}
-                                </div>
+                        // 确保正确遍历选项
+                        if (typeof options === 'object') {
+                            // 使用Object.entries确保获取键值对
+                            const entries = Array.isArray(options) ? 
+                                options.entries() : Object.entries(options);
+                            
+                            for (const [key, value] of entries) {
+                                // 处理可能的嵌套对象情况
+                                const displayKey = typeof key === 'string' ? key : String(key);
+                                const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                                
+                                // 判断是否是正确答案或用户答案
+                                const isCorrect = result.correct_answer && result.correct_answer.includes(displayKey);
+                                const isUserAnswer = result.user_answer && result.user_answer.includes(displayKey);
+                                let bgColor = '';
+                                let textColor = '';
+                                let mark = '';
+                                
+                                if (isCorrect && isUserAnswer) {
+                                    bgColor = 'bg-green-100';
+                                    textColor = 'text-green-800';
+                                    mark = ' ✅';
+                                } else if (isCorrect) {
+                                    bgColor = 'bg-green-100';
+                                    textColor = 'text-green-800';
+                                    mark = ' ✅';
+                                } else if (isUserAnswer) {
+                                    bgColor = 'bg-red-100';
+                                    textColor = 'text-red-800';
+                                    mark = ' ❌';
+                                } else {
+                                    bgColor = 'bg-gray-50';
+                                    textColor = 'text-gray-700';
+                                }
+                                
+                                optionsHtml += `<div class="${bgColor} ${textColor} px-2 py-1 rounded">
+                                    ${displayKey}. ${displayValue}${mark}
+                                </div>`;
+                            }
+                        }
+                        
+                        optionsHtml += `</div></div>`;
+                    }
+                    
+                    return `
+                        <div class="border rounded-lg p-4 ${result.is_correct ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-semibold text-gray-800">${result.title}</h4>
+                                <span class="text-sm font-medium ${result.is_correct ? 'text-green-600' : 'text-red-600'}">
+                                    ${result.is_correct ? '✅ 正确' : '❌ 错误'}
+                                </span>
                             </div>
-                        ` : ''}
-                    </div>
-                `).join('');
+                            
+                            ${optionsHtml}
+                            
+                            <div class="text-sm text-gray-600 mb-2">
+                                <div>你的答案: <span class="font-medium">${result.user_answer || '未作答'}</span></div>
+                                <div>正确答案: <span class="font-medium text-green-600">${result.correct_answer}</span></div>
+                            </div>
+
+                            ${result.analysis ? `
+                                <div class="analysis-box">
+                                    <div class="text-sm text-gray-700">
+                                        <strong>解析:</strong> ${result.analysis}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
 
                 $('#resultQuestions').html(resultsHtml);
             }

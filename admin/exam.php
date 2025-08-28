@@ -170,7 +170,7 @@ require_once 'common/header.php';
 // 引入侧边栏文件
 require_once 'common/sidebar.php';
 ?>
-
+<script src="../static/js/jquery.min.js"></script>
 <script>
 // 搜索功能
 const searchInput = document.getElementById('searchInput');
@@ -333,6 +333,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmAIGenerate = document.getElementById('confirmAIGenerate');
     const examTitle = document.getElementById('examTitle');
     const knowledgePoints = document.getElementById('knowledgePoints');
+    
+    // 创建加载中元素
+    let loadingElement = null;
+    function showLoading() {
+        // 如果已经存在加载元素，先移除
+        if (loadingElement) {
+            loadingElement.remove();
+        }
+        
+        // 创建新的加载元素
+        loadingElement = document.createElement('div');
+        loadingElement.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50';
+        loadingElement.innerHTML = `
+            <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                <p class="text-gray-700">AI正在组卷中，请稍候...</p>
+            </div>
+        `;
+        document.body.appendChild(loadingElement);
+    }
+    
+    function hideLoading() {
+        if (loadingElement) {
+            loadingElement.remove();
+            loadingElement = null;
+        }
+    }
 
     // 显示模态框
     aiGenerateBtn.addEventListener('click', () => {
@@ -374,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 显示加载中
-        showNotification('success', '正在进行AI组卷，请稍候...');
+        showLoading();
 
         // 发送AJAX请求
         $.ajax({
@@ -386,6 +413,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             dataType: 'json',
             success: function(response) {
+                hideLoading();
                 hideAIGenerateModal();
                 if (response.success) {
                     showNotification('success', response.message);
@@ -398,6 +426,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             },
             error: function(xhr, status, error) {
+                hideLoading();
                 hideAIGenerateModal();
                 console.error('AI组卷请求失败:', error);
                 showNotification('error', 'AI组卷请求失败，请重试');

@@ -35,63 +35,24 @@ require_once 'common/question_model.php';
 $examModel = new ExamModel();
 $questionModel = new QuestionModel();
 
-// 模拟AI请求获取题目数据
-function simulateAIRequest($knowledge_points) {
-    // 模拟题目数据，实际应用中这里会调用真实的AI API
-    $mockQuestions = [
-        [
-            'type' => 1, // 选择题
-            'content' => '以下哪种不是PHP的数据类型？',
-            'options' => [
-                'A' => 'integer',
-                'B' => 'float',
-                'C' => 'string',
-                'D' => 'arraylist'
-            ],
-            'answer' => 'D',
-            'score' => 5,
-            'analysis' => 'PHP中的数据类型包括integer、float、string、boolean、array、object、NULL、resource等，没有arraylist类型。'
-        ],
-        [
-            'type' => 1, // 选择题
-            'content' => '在PHP中，连接字符串的运算符是什么？',
-            'options' => [
-                'A' => '+',
-                'B' => '.',
-                'C' => '&',
-                'D' => '&&'
-            ],
-            'answer' => 'B',
-            'score' => 5,
-            'analysis' => 'PHP中使用点号(.)作为字符串连接运算符。'
-        ],
-        [
-            'type' => 2, // 判断题
-            'content' => 'PHP是一种编译型语言。',
-            'answer' => '错误',
-            'score' => 3,
-            'analysis' => 'PHP是一种解释型语言，不需要编译成机器码即可执行。'
-        ],
-        [
-            'type' => 3, // 填空题
-            'content' => 'PHP的全称是__________________。',
-            'answer' => 'PHP: Hypertext Preprocessor',
-            'score' => 4,
-            'analysis' => 'PHP最初代表Personal Home Page，现在代表PHP: Hypertext Preprocessor。'
-        ],
-        [
-            'type' => 4, // 简答题
-            'content' => '简述PHP的主要特点。',
-            'answer' => '1. 开源免费；2. 易于学习；3. 跨平台；4. 面向对象；5. 支持多种数据库；6. 与HTML无缝集成；7. 广泛的社区支持。',
-            'score' => 10,
-            'analysis' => 'PHP作为一种流行的服务器端脚本语言，具有以上主要特点，使其成为Web开发的重要工具。'
-        ]
-    ];
-    
-    return $mockQuestions;
+
+// 调用AI接口
+$knowledge_points .= '返回字段说明：question为题目名称，options为选项，只能有4个选项，answer为题目答案，multiSelect为是否多选，true为多选，false为单选，explanation为题目答案说明，题目为json格式：[{question: "题目1？",options: ["A.答案1", "B.答案2", "C.答案3", "D.答案4"], answer: "B",multiSelect: false,explanation: "这里是题目1的答案解析" }, {question: "题目2？",options: ["A.答案1", "B.答案2", "C.答案3", "D.答案4"], answer: ["A", "E"],multiSelect: true,explanation: "这里是答案2的解析"}]，不要有换行，不要有空格。';
+$aiResponse = baiduAi($knowledge_points);
+$content = $aiResponse['choices'][0]['message']['content'];
+$content = stripslashes($content);
+if(stripos($content,'json')!==false){
+    $content = str_replace(["```json\n","\n```"],'',$content);
 }
-
-
+$questions = json_decode($content,true);
+if(!$questions){
+    log_model('aithink', 'baiduAi', [
+                'data' => $content,
+                'error' => '解析json失败',
+            ],'error');
+    echo json_encode(['success' => false, 'message' => 'AI生成题目失败'],JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 try {
     // 开始事务
@@ -102,7 +63,6 @@ try {
         'title' => $title,
         'nums' => 0, // 暂时设为0，后面会更新
         'score' => 0, // 暂时设为0，后面会更新
-        'description' => '由AI自动生成的试卷，知识点：' . $knowledge_points,
         'create_time' => date('Y-m-d H:i:s'),
         'update_time' => date('Y-m-d H:i:s')
     ];
@@ -112,18 +72,12 @@ try {
     if (!$examId) {
         throw new Exception('创建试卷失败');
     }
-    
-    // 获取模拟的题目数据
-    $questions = simulateAIRequest($knowledge_points);
-    
+  
     // 计算总分
-    $totalScore = 0;
-    foreach ($questions as $question) {
-        $totalScore += $question['score'];
-    }
+    $totalScore = count($questions) * 5;
     
     // 更新试卷的题目数量和总分
-    $examModel->updateExam($examId, [
+    $examModel->updateExamField($examId, [
         'nums' => count($questions),
         'score' => $totalScore,
         'update_time' => date('Y-m-d H:i:s')
@@ -133,17 +87,15 @@ try {
     foreach ($questions as $questionData) {
         $question = [
             'exam_id' => $examId,
-            'type' => $questionData['type'],
-            'content' => $questionData['content'],
-            'options' => isset($questionData['options']) ? json_encode($questionData['options']) : null,
-            'answer' => $questionData['answer'],
-            'score' => $questionData['score'],
-            'analysis' => $questionData['analysis'],
-            'create_time' => date('Y-m-d H:i:s'),
-            'update_time' => date('Y-m-d H:i:s')
+            'title' => $questionData['question'],
+            'type' => $questionData['multiSelect'] ? 2 : 1,
+            'options' => json_encode($questionData['options'],JSON_UNESCAPED_UNICODE),
+            'answer' => $questionData['multiSelect'] ? implode('',$questionData['answer']) : $questionData['answer'],
+            'score' => 5,
+            'analysis' => $questionData['explanation']
         ];
         
-        $questionId = $questionModel->createQuestion($question);
+        $questionId = $questionModel->addQuestion($question);
         
         if (!$questionId) {
             throw new Exception('导入题目失败');
@@ -176,42 +128,4 @@ try {
     ]);
 }
 
-// 如果ExamModel类中没有createExam方法，这里提供一个简单的实现示例
-if (!method_exists('ExamModel', 'createExam')) {
-    class ExamModel {
-        public function createExam($data) {
-            global $pdo;
-            $sql = "INSERT INTO exam (title, nums, score, description, create_time, update_time) VALUES (:title, :nums, :score, :description, :create_time, :update_time)";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($data);
-            return $pdo->lastInsertId();
-        }
-        
-        public function updateExam($id, $data) {
-            global $pdo;
-            $sql = "UPDATE exam SET ";
-            $params = [];
-            foreach ($data as $key => $value) {
-                $sql .= "$key = :$key, ";
-                $params[":$key"] = $value;
-            }
-            $sql = rtrim($sql, ', ') . " WHERE id = :id";
-            $params[':id'] = $id;
-            $stmt = $pdo->prepare($sql);
-            return $stmt->execute($params);
-        }
-    }
-}
 
-// 如果QuestionModel类中没有createQuestion方法，这里提供一个简单的实现示例
-if (!method_exists('QuestionModel', 'createQuestion')) {
-    class QuestionModel {
-        public function createQuestion($data) {
-            global $pdo;
-            $sql = "INSERT INTO question (exam_id, type, content, options, answer, score, analysis, create_time, update_time) VALUES (:exam_id, :type, :content, :options, :answer, :score, :analysis, :create_time, :update_time)";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($data);
-            return $pdo->lastInsertId();
-        }
-    }
-}

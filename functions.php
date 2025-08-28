@@ -80,3 +80,57 @@ function getRandChar($length = 8){
   
   return $str;
 }
+
+function baiduAi($question){
+    global $baidu_ai_config;
+    $model = $baidu_ai_config['model'];
+    $appId = $baidu_ai_config['appid'];
+    $apiKey = $baidu_ai_config['api_key'];
+
+
+    $post = [
+            'model'=>$model,
+            'messages'=>[
+                ['role'=>'user','content'=>[
+                    ['type'=>'text','text'=>$question]
+                ]]
+            ],
+            "web_search"=>[
+                "enable"=>true,
+                "enable_citation"=>false,
+                "enable_trace"=>false
+            ],
+            "plugin_options"=>[
+                "plugin_ids"=>[
+                    "plugin_baidu_search"
+                ]
+            ],
+            'stream'=>false,
+            'enable_thinking'=>false
+        ];
+
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => "https://qianfan.baidubce.com/v2/chat/completions",
+        CURLOPT_TIMEOUT => 300,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER  => false,
+        CURLOPT_SSL_VERIFYHOST  => false,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS =>json_encode($post,JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER => array(
+            'Content-Type: application/json',
+            'appid: '.$appId,
+            'Authorization: Bearer '.$apiKey
+        ),
+
+    ));
+    $response = curl_exec($curl);
+    curl_close($curl);
+    // log_model('aithink', 'baiduAi', [
+    //             'data' => $response,
+    //             'question' => $question
+    //         ]);
+    $response = json_decode($response, true);
+    return $response;
+}

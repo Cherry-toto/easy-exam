@@ -37,8 +37,7 @@ $questionModel = new QuestionModel();
 
 
 // 调用AI接口
-$knowledge_points .= '返回字段说明：question为题目名称，options为选项，只能有4个选项，answer为题目答案，multiSelect为是否多选，true为多选，false为单选，explanation为题目答案说明，题目为json格式：[{question: "题目1？",options: ["A.答案1", "B.答案2", "C.答案3", "D.答案4"], answer: "B",multiSelect: false,explanation: "这里是题目1的答案解析" }, {question: "题目2？",options: ["A.答案1", "B.答案2", "C.答案3", "D.答案4"], answer: ["A", "E"],multiSelect: true,explanation: "这里是答案2的解析"}]，不要有换行，不要有空格。';
-$aiResponse = baiduAi($knowledge_points);
+$knowledge_points .= '返回字段说明：question为题目名称，options为选项，只能有4个选项，answer为题目答案，multiSelect为是否多选，true为多选，false为单选，explanation为题目答案说明，题目为json格式：[{question: "题目1？",options: {"A":"答案1", "B":"答案2", "C":"答案3", "D":"答案4"}, answer: "B",multiSelect: false,explanation: "这里是题目1的答案解析" }, {question: "题目2？",options: {"A":"答案1", "B":"答案2", "C":"答案3", "D":"答案4"}, answer: ["A", "B"],multiSelect: true,explanation: "这里是答案2的解析"}]，不要有换行，不要有空格。';$aiResponse = baiduAi($knowledge_points);
 $content = $aiResponse['choices'][0]['message']['content'];
 $content = stripslashes($content);
 if(stripos($content,'json')!==false){
@@ -85,11 +84,17 @@ try {
     
     // 将题目导入到数据库
     foreach ($questions as $questionData) {
+        
+        $options =  array_map(function($q){
+               return str_replace(['A.','B.','C.','D.'],'',$q);
+            },$questionData['options']);
+        $options = array_combine(['A','B','C','D'],$options);
+        $options = json_encode($options,JSON_UNESCAPED_UNICODE);
         $question = [
             'exam_id' => $examId,
             'title' => $questionData['question'],
             'type' => $questionData['multiSelect'] ? 2 : 1,
-            'options' => json_encode($questionData['options'],JSON_UNESCAPED_UNICODE),
+            'options' => $options,
             'answer' => $questionData['multiSelect'] ? implode('',$questionData['answer']) : $questionData['answer'],
             'score' => 5,
             'analysis' => $questionData['explanation']

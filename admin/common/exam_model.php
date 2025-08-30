@@ -292,5 +292,28 @@ class ExamModel {
             return [];
         }
     }
+
+    public function createExam($data) {
+        global $pdo;
+        $sql = "INSERT INTO exam (title, nums, score, create_time, update_time) VALUES (:title, :nums, :score, :create_time, :update_time)";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($data);
+        return $pdo->lastInsertId();
+    }
+        
+    public function updateExamField($id, $data) {
+        global $pdo;
+        $sql = "UPDATE exam SET ";
+        $params = [];
+        foreach ($data as $key => $value) {
+            $sql .= "$key = :$key, ";
+            $params[":$key"] = $value;
+        }
+        $sql = rtrim($sql, ', ') . " WHERE id = :id";
+        $params[':id'] = $id;
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute($params);
+    }
+
 }
 ?>

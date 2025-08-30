@@ -35,6 +35,9 @@ require_once 'common/header.php';
                 <a href="exam_edit.php" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-300 flex items-center">
                     <i class="fas fa-plus mr-2"></i>添加试卷
                 </a>
+                <button id="aiGenerateBtn" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors duration-300 flex items-center">
+                    <i class="fas fa-robot mr-2"></i>AI组卷
+                </button>
                 <button id="batchDeleteBtn" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors duration-300 flex items-center" disabled>
                     <i class="fas fa-trash-alt mr-2"></i>批量删除
                 </button>
@@ -112,11 +115,62 @@ require_once 'common/header.php';
     </div>
 </main>
 
+<!-- AI组卷模态框 -->
+<div id="aiGenerateModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- 背景遮罩 -->
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        <!-- 模态框内容 -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                            AI智能组卷
+                        </h3>
+                        <div class="mt-2">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="examTitle" class="block text-sm font-medium text-gray-700">
+                                        试卷标题
+                                    </label>
+                                    <div class="mt-1">
+                                        <input type="text" name="examTitle" id="examTitle" class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md" placeholder="请输入试卷标题">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="knowledgePoints" class="block text-sm font-medium text-gray-700">
+                                        知识点
+                                    </label>
+                                    <div class="mt-1">
+                                        <textarea name="knowledgePoints" id="knowledgePoints" rows="10" class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md" placeholder="请输入知识点，多个知识点用逗号分隔"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:w-auto sm:text-sm" id="confirmAIGenerate">
+                    确认组卷
+                </button>
+                <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" id="cancelAIGenerate">
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
 // 引入侧边栏文件
 require_once 'common/sidebar.php';
 ?>
-
+<script src="../static/js/jquery.min.js"></script>
 <script>
 // 搜索功能
 const searchInput = document.getElementById('searchInput');
@@ -271,6 +325,114 @@ document.addEventListener('DOMContentLoaded', function() {
         urlParams.delete('message');
         history.replaceState(null, null, '?' + urlParams.toString() || window.location.pathname);
     }
+
+    // AI组卷功能
+    const aiGenerateModal = document.getElementById('aiGenerateModal');
+    const aiGenerateBtn = document.getElementById('aiGenerateBtn');
+    const cancelAIGenerate = document.getElementById('cancelAIGenerate');
+    const confirmAIGenerate = document.getElementById('confirmAIGenerate');
+    const examTitle = document.getElementById('examTitle');
+    const knowledgePoints = document.getElementById('knowledgePoints');
+    
+    // 创建加载中元素
+    let loadingElement = null;
+    function showLoading() {
+        // 如果已经存在加载元素，先移除
+        if (loadingElement) {
+            loadingElement.remove();
+        }
+        
+        // 创建新的加载元素
+        loadingElement = document.createElement('div');
+        loadingElement.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50';
+        loadingElement.innerHTML = `
+            <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                <p class="text-gray-700">AI正在组卷中，请稍候...</p>
+            </div>
+        `;
+        document.body.appendChild(loadingElement);
+    }
+    
+    function hideLoading() {
+        if (loadingElement) {
+            loadingElement.remove();
+            loadingElement = null;
+        }
+    }
+
+    // 显示模态框
+    aiGenerateBtn.addEventListener('click', () => {
+        aiGenerateModal.classList.remove('hidden');
+    });
+
+    // 隐藏模态框
+    function hideAIGenerateModal() {
+        aiGenerateModal.classList.add('hidden');
+        // 清空表单
+        examTitle.value = '';
+        knowledgePoints.value = '';
+    }
+
+    // 取消按钮
+    cancelAIGenerate.addEventListener('click', hideAIGenerateModal);
+
+    // 点击背景关闭模态框
+    aiGenerateModal.addEventListener('click', (e) => {
+        if (e.target === aiGenerateModal) {
+            hideAIGenerateModal();
+        }
+    });
+
+    // 确认组卷
+    confirmAIGenerate.addEventListener('click', () => {
+        const title = examTitle.value.trim();
+        const points = knowledgePoints.value.trim();
+
+        // 表单验证
+        if (!title) {
+            showNotification('error', '请输入试卷标题');
+            return;
+        }
+
+        if (!points) {
+            showNotification('error', '请输入知识点');
+            return;
+        }
+
+        // 显示加载中
+        showLoading();
+
+        // 发送AJAX请求
+        $.ajax({
+            url: 'aithink.php',
+            type: 'POST',
+            data: {
+                title: title,
+                knowledge_points: points
+            },
+            dataType: 'json',
+            success: function(response) {
+                hideLoading();
+                hideAIGenerateModal();
+                if (response.success) {
+                    showNotification('success', response.message);
+                    // 刷新页面以显示新创建的试卷
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showNotification('error', response.message || 'AI组卷失败');
+                }
+            },
+            error: function(xhr, status, error) {
+                hideLoading();
+                hideAIGenerateModal();
+                console.error('AI组卷请求失败:', error);
+                showNotification('error', 'AI组卷请求失败，请重试');
+            }
+        });
+    });
 });
 </script>
 

@@ -96,10 +96,11 @@ if (strtolower($file_extension) === 'json') {
         // 处理不正规的json
         $jsonContent = str_replace(['question','options','answer','multiSelect','explanation'],['"question"','"options"','"answer"','"multiSelect"','"explanation"'],$jsonContent);
     }
+
     $questions = json_decode($jsonContent, true);
 
     if (json_last_error() !== JSON_ERROR_NONE) {
-        echo jsonResponse(false, 'JSON文件格式错误');
+        echo jsonResponse(false, 'JSON文件格式错误'.json_last_error());
         exit;
     }
 

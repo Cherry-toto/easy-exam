@@ -47,12 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($title)) {
         $errors[] = '试卷标题不能为空';
     }
-    // if ($nums < 1) {
-    //     $errors[] = '题目数量必须大于0';
-    // }
-    // if ($score < 1) {
-    //     $errors[] = '总分必须大于0';
-    // }
+ 
 
     // 如果没有错误，保存数据
     if (empty($errors)) {

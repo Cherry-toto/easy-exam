@@ -18,6 +18,13 @@ $redis_config = [
     'database' => 0
 ];
 
+// 百度AI配置
+$baidu_ai_config = [
+    'appid' => 'app-5rBT9wha',
+    'api_key' => 'bce-v3/ALTAK-H3sL9ofGIrKVLPOtWGw7I/3bc116649b9b33eb9f0d40514b08d3b84b6f938b',
+    'model' => 'ernie-4.5-turbo-128k'
+];
+
 // 邮箱配置
 $email_config = [
     'host' => 'smtp.163.com',

@@ -73,7 +73,7 @@ try {
     }
   
     // 计算总分
-    $totalScore = count($questions) * 5;
+    $totalScore = count($questions)>=50 ? count($questions) * 2 : count($questions) * 5;
     
     // 更新试卷的题目数量和总分
     $examModel->updateExamField($examId, [

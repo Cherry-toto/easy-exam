@@ -55,7 +55,7 @@ require_once 'common/header.php';
                     <i class="fas fa-search"></i>
                 </button>
                 <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-            </div>
+            </form>
         </div>
 
         <!-- 题目列表 -->

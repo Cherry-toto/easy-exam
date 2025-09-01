@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($title)) {
         $errors[] = '试卷标题不能为空';
     }
-  
+ 
 
     // 如果没有错误，保存数据
     if (empty($errors)) {

@@ -43,7 +43,10 @@ class QuestionModel {
                 $countQuery .= ' AND (q.title LIKE :search OR e.title LIKE :search)';
             }
             $countStmt = $this->pdo->prepare($countQuery);
-            $countStmt->execute($params);
+            if (!empty($search)) {
+                $countStmt->bindParam(':search', $params[':search'], PDO::PARAM_STR);
+            }
+            $countStmt->execute();
             $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
             log_model('QuestionModel', 'getAllQuestions', [

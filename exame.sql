@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS question (
     type TINYINT(1) NOT NULL COMMENT '题目类型：1单选，2多选',
     answer VARCHAR(10) NOT NULL COMMENT '正确答案，存储ABCD格式',
     analysis VARCHAR(500) NOT NULL DEFAULT '' COMMENT '题目解析',
+    score INT NOT NULL DEFAULT 0 COMMENT '题目分数',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     FOREIGN KEY (exam_id) REFERENCES exam(id) ON DELETE CASCADE ON UPDATE CASCADE,
     INDEX idx_exam_id (exam_id),

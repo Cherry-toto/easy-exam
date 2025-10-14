@@ -84,7 +84,7 @@
                            required 
                            class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                            placeholder="请输入您的邮箱地址"
-                           pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
+                           >
                 </div>
 
                 <!-- 人机验证按钮 -->
@@ -125,7 +125,7 @@
                         <input type="password" 
                                id="password" 
                                name="password" 
-                               required 
+                               
                                class="form-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
                                placeholder="请输入您的密码">
                     </div>
@@ -250,10 +250,6 @@
                 accountPwdSection.hide();
                 $("#password").val('');
                 emailInput.prop('required', true);
-                form.off('submit').submit(function(e) {
-                    e.preventDefault();
-                    handleEmailCodeLogin();
-                });
             }
 
             // 显示账户密码登录
@@ -389,31 +385,40 @@
                 sendVerificationCode(email);
             });
 
-            // 表单提交
-            $('#loginForm').submit(function(e) {
+            // 统一的表单提交处理
+            $('#loginForm').off('submit').on('submit', function(e) {
                 e.preventDefault();
                 
-                const email = $('#email').val();
-                const code = $('#code').val();
+                // 检查当前是哪种登录方式
+                if (emailCodeBtn.hasClass('bg-gradient-to-r from-purple-500 to-indigo-600 text-white')) {
+                    // 邮箱验证码登录
+                    const email = $('#email').val();
+                    const code = $('#code').val();
 
-                if (!validateEmail(email)) {
-                    shakeElement('#email');
-                    showMessage('error', '请输入正确的邮箱地址');
-                    return;
+                    if (!validateEmail(email)) {
+                        shakeElement('#email');
+                        showMessage('error', '请输入正确的邮箱地址');
+                        return;
+                    }
+
+                    if (!/^\d{6}$/.test(code)) {
+                        shakeElement('#code');
+                        showMessage('error', '请输入6位数字验证码');
+                        return;
+                    }
+
+                    loginUser(email, code);
+                } else if (accountPwdBtn.hasClass('bg-gradient-to-r from-purple-500 to-indigo-600 text-white')) {
+                    // 账户密码登录
+                    const email = $('#email').val();
+                    const password = $('#password').val();
+                    loginWithAccountPwd(email, password);
                 }
-
-                if (!/^\d{6}$/.test(code)) {
-                    shakeElement('#code');
-                    showMessage('error', '请输入6位数字验证码');
-                    return;
-                }
-
-                loginUser(email, code);
             });
 
             // 邮箱验证
             function validateEmail(email) {
-                const re = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+                const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
                 return re.test(email.toLowerCase());
             }
 

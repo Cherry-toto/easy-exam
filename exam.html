@@ -285,18 +285,39 @@
         </div>
     </div>
 
+    <!-- 退出考试确认模态框 -->
+    <div id="exitExamModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-auto">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">确认退出考试</h3>
+                <p class="text-sm text-gray-600 mb-4">确定要退出当前考试吗？未完成的考试将不会保存。</p>
+                <div class="flex space-x-3">
+                    <button onclick="hideExitExamModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        取消
+                    </button>
+                    <button onclick="confirmExitExam()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        确定退出
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 底部导航 -->
     <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden">
         <div class="flex justify-around py-3">
-            <a href="/index.php" class="bottom-nav-link text-center py-2 px-4" data-tab="home">
+            <a href="/index.php" class="bottom-nav-link text-center py-2 px-4" data-tab="home" onclick="return showExitExamModal('/index.php')">
                 <i class="fas fa-home text-2xl"></i>
                 <span class="hidden">首页</span>
             </a>
-            <a href="/exam-list.html" class="bottom-nav-link text-center py-2 px-4">
+            <a href="/exam-list.html" class="bottom-nav-link text-center py-2 px-4" onclick="return showExitExamModal('/exam-list.html')">
                 <i class="fas fa-list-alt text-2xl"></i>
                 <span class="hidden">试卷</span>
             </a>
-            <a href="/user.html" class="bottom-nav-link text-center py-2 px-4">
+            <a href="/user.html" class="bottom-nav-link text-center py-2 px-4" onclick="return showExitExamModal('/user.html')">
                 <i class="fas fa-user text-2xl"></i>
                 <span class="hidden">个人中心</span>
             </a>
@@ -304,20 +325,57 @@
     </div>
 
     <script>
-    
-            // 检查登录状态
-            function checkLoginStatus() {
-                $.ajax({
-                    url: '/checklogin.php',
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(response) {
-                        if (!response.logged_in) {
-                            window.location.href = '/login.html';
-                        }
-                    }
-                });
+        // 存储目标跳转URL
+        let targetUrl = '';
+
+        // 显示退出考试模态框
+        function showExitExamModal(url) {
+            targetUrl = url;
+            $('#exitExamModal').removeClass('hidden').addClass('flex');
+            return false; // 阻止默认跳转
+        }
+
+        // 隐藏退出考试模态框
+        function hideExitExamModal() {
+            targetUrl = '';
+            $('#exitExamModal').addClass('hidden').removeClass('flex');
+        }
+
+        // 确认退出考试
+        function confirmExitExam() {
+            if (targetUrl) {
+                window.location.href = targetUrl;
             }
+        }
+
+        // 检查登录状态
+        function checkLoginStatus() {
+            $.ajax({
+                url: '/checklogin.php',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (!response.logged_in) {
+                        window.location.href = '/login.html';
+                    }
+                }
+            });
+        }
+
+    
+        // 检查登录状态
+        function checkLoginStatus() {
+            $.ajax({
+                url: '/checklogin.php',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (!response.logged_in) {
+                        window.location.href = '/login.html';
+                    }
+                }
+            });
+        }
         $(document).ready(function() {
             let examData = {};
             let questions = [];
@@ -666,6 +724,7 @@
                 // 显示结果题目
                 const resultsHtml = examResults.results.map(result => {
                     let optionsHtml = '';
+                    let optionsError = '';
                     
                     // 尝试从不同来源获取选项数据
                     let options = null;
@@ -682,11 +741,11 @@
                     // 如果仍然没有，尝试从字符串格式解析（如"{A: 'AAAA', B: 'BBB', C: 'CCC', D: 'DDD'}"）
                     else if (result.options_str) {
                         try {
-                            // 处理可能的字符串格式
-                            const formattedStr = result.options_str.replace(/'/g, '"');
-                            options = JSON.parse(formattedStr);
+                            // 使用更安全的解析方法
+                            options = parseOptionsString(result.options_str);
                         } catch (e) {
-                            console.log('解析选项字符串失败:', e);
+                            console.error('解析选项字符串失败:', e);
+                            optionsError = `<div class="text-red-500 text-xs mt-1">选项加载失败: ${e.message}</div>`;
                         }
                     }
                     
@@ -738,6 +797,8 @@
                         }
                         
                         optionsHtml += `</div></div>`;
+                    } else if (!optionsError) {
+                        optionsHtml = '<div class="text-gray-500 text-sm italic">无法加载选项数据</div>';
                     }
                     
                     return `
@@ -749,7 +810,7 @@
                                 </span>
                             </div>
                             
-                            ${optionsHtml}
+                            ${optionsHtml}${optionsError}
                             
                             <div class="text-sm text-gray-600 mb-2">
                                 <div>你的答案: <span class="font-medium">${result.user_answer || '未作答'}</span></div>
@@ -770,7 +831,28 @@
                 $('#resultQuestions').html(resultsHtml);
             }
 
-
+            // 安全解析选项字符串的辅助函数
+            function parseOptionsString(str) {
+                // 尝试多种解析策略
+                try {
+                    // 首先尝试直接JSON解析
+                    return JSON.parse(str);
+                } catch (e) {
+                    // 如果失败，尝试替换单引号为双引号
+                    try {
+                        const formattedStr = str.replace(/'/g, '"');
+                        return JSON.parse(formattedStr);
+                    } catch (e2) {
+                        // 如果仍然失败，尝试使用更宽松的解析
+                        try {
+                            // 使用eval作为最后的手段（注意安全风险）
+                            return eval(`(${str})`);
+                        } catch (e3) {
+                            throw new Error(`无法解析选项: ${e3.message}`);
+                        }
+                    }
+                }
+            }
         });
     </script>
 </body>

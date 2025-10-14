@@ -395,8 +395,7 @@ if (!empty($searchExam)) {
             $.get('question_edit.php', {
                 search_exam_ajax: 1,
                 search_term: searchTerm,
-                <?php echo $questionId ? "id: $questionId" : ''; ?>
-            })
+                <?php echo $questionId ? "id: $questionId" : ''; ?>})
             .done(function(data) {
                 $('#exam-search-results').html(data);
                 bindExamSelectionEvents();

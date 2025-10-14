@@ -310,6 +310,8 @@
         </div>
     </div>
 
+<!-- 考试详情模态框已迁移至独立页面exam_log.html -->
+
     <script>
         $(document).ready(function() {
             // 检查登录状态
@@ -479,6 +481,7 @@
                                         <div><i class="fas fa-clock mr-2"></i>用时：${useTime}</div>
                                         <div><i class="fas fa-calendar-alt mr-2"></i>时间：${createTime}</div>
                                     </div>
+                                    <button class="mt-3 px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm" onclick="window.location.href='/exam_log.html?exam_log_id=${log.id}'">查看详情</button>
                                 </div>
                             `;
                         });
@@ -632,6 +635,11 @@
             // 滚动到错误信息
             $errorEl[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+
+        // 考试详情功能已迁移至独立页面exam_log.html
+        // 相关函数showExamDetail、hideExamDetail、loadExamDetail已移除
+
+        // 点击考试详情模态框背景关闭事件已移除
     </script>
 </body>
 </html>
